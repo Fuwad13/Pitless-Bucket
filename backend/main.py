@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from fastapi import Depends
 from fastapi import FastAPI, HTTPException, Request
@@ -7,6 +8,7 @@ from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from sqlalchemy.orm import Session
+from sqlalchemy import update
 from db.utils import get_db
 from db.models import User, GoogleDrive
 
@@ -54,15 +56,17 @@ def auth_callback(code: str, db: Session = Depends(get_db)):
     print(code)
     flow.fetch_token(code=code)
     creds = flow.credentials
-    with open('temp_token.json', 'w') as f:
+    with open(Path(__file__).parent / 'temp_token.json', 'w') as f:
         f.write(creds.to_json())
-    creds = Credentials.from_authorized_user_file('temp_token.json', SCOPES)
-    print(creds)
+    creds = Credentials.from_authorized_user_file(Path(__file__).parent / 'temp_token.json', SCOPES)
+    try:
+        os.remove(Path(__file__).parent / 'temp_token.json')
+    except:
+        pass
+
     # Get user info from Google
     service = build('oauth2', 'v2', credentials=creds)
     user_info = service.userinfo().get().execute()
-    print(user_info)
-    
     # Check if user exists
     user = db.query(User).filter(User.email == user_info['email']).first()
     if not user:
@@ -78,11 +82,21 @@ def auth_callback(code: str, db: Session = Depends(get_db)):
     # Create GoogleDrive entry
     drive = GoogleDrive(
         user_id=user.id,
+        email=user_info['email'],
         creds=creds.to_json(),
         total_space=15*1024**3  # 15GB in bytes
     )
-    db.add(drive)
-    db.commit()
+    existing_drive = db.query(GoogleDrive).filter(GoogleDrive.email == user_info['email']).first()
+    # print(existing_drive)
+    if existing_drive:
+        stmt = ( update(GoogleDrive).where(GoogleDrive.email==user_info['email']).values(creds=creds.to_json()))
+        db.execute(stmt)
+        db.commit()
+        db.refresh(existing_drive)
+    else:
+        db.add(drive)
+        db.commit()
+        db.refresh(drive)
     
     return {"message": "Authentication successful!"}
 
