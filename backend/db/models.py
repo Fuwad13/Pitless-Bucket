@@ -25,6 +25,7 @@ class GoogleDrive(Base):
     
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    email = Column(String, unique=True, nullable=False)
     # refresh_token = Column(String, nullable=False) 
     creds = Column(String, nullable=False)  # JSON string
     used_space = Column(Integer, default=0)  # In bytes
@@ -34,7 +35,7 @@ class GoogleDrive(Base):
     # file_storages = relationship("FileStorage", back_populates="drives")
 
     def __repr__(self):
-        return f"<GoogleDrive(user_id={self.user_id}, used_space={self.used_space}, total_space={self.total_space})>"
+        return f"<GoogleDrive(user_id={self.user_id}, email={self.email}, used_space={self.used_space}, total_space={self.total_space})>"
 
 class File(Base):
     __tablename__ = 'file'
