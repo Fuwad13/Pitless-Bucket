@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,9 +20,11 @@ export default function LoginPage() {
       setError("Please fill in all fields");
       return;
     }
-
-    console.log("Login attempt with:", { email, password });
-    console.log("Login successful!");
+    if (email == "temp@mail.com" && password == "123456") {
+      navigate("/dashboard");
+    } else {
+      setError("Invalid credentials");
+    }
   };
 
   return (

@@ -5,6 +5,7 @@ import "./index.css";
 import Login from "./assets/pages/Login";
 import Root from "./assets/routes/root";
 import Home from "./assets/pages/Home";
+import Dashboard from "./assets/pages/Dashboard";
 
 const router = createBrowserRouter([
   {
@@ -19,6 +20,10 @@ const router = createBrowserRouter([
       {
         path: "/login",
         element: <Login />,
+      },
+      {
+        path: "/dashboard",
+        element: <Dashboard />,
       },
     ],
   },
