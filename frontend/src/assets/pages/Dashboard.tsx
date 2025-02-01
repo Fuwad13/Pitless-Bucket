@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Folder, File, Upload, Settings, Home, Menu } from "lucide-react";
+import FileUpload from "../modals/FileUpload";
+import { Folder, File, Settings, Home, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,18 +21,14 @@ const Dashboard: React.FC = () => {
       <aside className="hidden md:flex flex-col w-64 bg-blue-50 p-6 space-y-4 shadow-lg">
         <h2 className="text-2xl font-bold text-blue-600">Pitless Bucket</h2>
         <nav className="space-y-3">
+          <FileUpload />
           <Link
             to="/"
             className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
           >
             <Home size={20} /> Home
           </Link>
-          <Link
-            to="/upload"
-            className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
-          >
-            <Upload size={20} /> Upload
-          </Link>
+
           <Link
             to="/settings"
             className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
@@ -50,18 +47,14 @@ const Dashboard: React.FC = () => {
         </SheetTrigger>
         <SheetContent side="left">
           <nav className="space-y-4">
+            <FileUpload />
             <Link
               to="/"
               className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
             >
               <Home size={20} /> Home
             </Link>
-            <Link
-              to="/upload"
-              className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
-            >
-              <Upload size={20} /> Upload
-            </Link>
+
             <Link
               to="/settings"
               className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
