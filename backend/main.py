@@ -110,9 +110,6 @@ def list_files(db: Session = Depends(get_db)):
     results = service.files().list(pageSize=10, fields="files(id, name)").execute()
     return results.get('files', [])
 
-if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run("main:app", host='localhost', port=8000, reload=True)
 
 
 def split_file(input_file_path: str, chunk_size: int = 100 * 1024 * 1024) -> list[str]:
@@ -154,6 +151,7 @@ async def upload_file(file: UploadFile = File(...)):
         uploaded_chunks = []
 
         # Load accounts from JSON files
+        #  TODO : get creds from db , this is now hardcoded for the demo
         accounts_dir = Path(__file__).parent
         with open(accounts_dir / 'RT_1.json') as f1, open(accounts_dir / 'RT_2.json') as f2:
             accounts = [json.load(f1), json.load(f2)]
@@ -224,3 +222,8 @@ async def upload_file(file: UploadFile = File(...)):
                 if os.path.exists(chunk_path):
                     os.remove(chunk_path)
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+if __name__ == '__main__':
+    import uvicorn
+    uvicorn.run("main:app", host='localhost', port=8000, reload=True)
