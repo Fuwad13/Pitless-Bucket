@@ -16,7 +16,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.UTC))
 
     drives = relationship("GoogleDrive", back_populates="user")
-    files = relationship("File", back_populates="user")
+    files = relationship("FileInfo", back_populates="user")
 
     def __repr__(self):
         return f"<User(name={self.name}, email={self.email}, created_at={self.created_at})>"
@@ -40,13 +40,29 @@ class GoogleDrive(Base):
         return f"<GoogleDrive(user_id={self.user_id}, email={self.email}, used_space={self.used_space}, total_space={self.total_space})>"
 
 
-class File(Base):
+class FileInfo(Base):
     __tablename__ = "file"
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     file_name = Column(String, nullable=False)
-    file_size = Column(Integer, nullable=False)  # In bytes
+    size = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.UTC))
 
     user = relationship("User", back_populates="files")
+    chunks = relationship("FileChunk", back_populates="file")  # Added relationship
+
+
+class FileChunk(Base):
+    __tablename__ = "file_chunk"
+
+    id = Column(Integer, primary_key=True)
+    file_id = Column(Integer, ForeignKey("file.id"), nullable=False)
+    chunk_name = Column(String, nullable=False)
+    chunk_number = Column(Integer, nullable=False)
+    drive_file_id = Column(String, nullable=False)
+    drive_account = Column(String, nullable=False)
+    size = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.now(datetime.UTC))
+
+    file = relationship("FileInfo", back_populates="chunks")

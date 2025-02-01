@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 
 from db.utils import get_db
-from db.models import User, GoogleDrive
+from db.models import User, GoogleDrive, FileInfo, FileChunk
 from fastapi import Depends
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,6 +37,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/userinfo.profile",
     "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/drive.metadata",
 ]
 
 # Configure the OAuth2 flow
@@ -147,7 +148,7 @@ def split_file(input_file_path: str, chunk_size: int = 100 * 1024 * 1024) -> lis
 
 
 @app.post("/api/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
         # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
@@ -181,12 +182,14 @@ async def upload_file(file: UploadFile = File(...)):
                 scopes=SCOPES,
             )
 
+            # TODO : handle this in a better way
             # Refresh token if needed
             # if not creds.valid:
             #     creds.refresh(Request())
 
             # Create Drive service
             drive_service = build("drive", "v3", credentials=creds)
+            oauth_service = build("oauth2", "v2", credentials=creds)
 
             # Upload chunk
             chunk_name = f"{file.filename}.part{idx+1:03d}"
@@ -205,18 +208,41 @@ async def upload_file(file: UploadFile = File(...)):
                     "original_filename": file.filename,
                     "chunk_number": idx + 1,
                     "chunk_name": chunk_name,
-                    "drive_account_id": account.get("drive_account_id", "unknown"),
+                    "drive_account": oauth_service.userinfo()
+                    .get()
+                    .execute()
+                    .get("email"),
                     "drive_file_id": drive_file["id"],
                     "size": os.path.getsize(chunk_path),
                 }
             )
+            media._fd.close()
             print(chunk_path)
-            # Clean up local chunk file
-            # os.remove(chunk_path)
-            current_account_idx += 1  # Move to next account for next chunk
+            current_account_idx += 1
 
-        # Clean up original temp file
+        # TODO : currently hardcoded user_id
+        file_ = FileInfo(
+            user_id=1, file_name=file.filename, size=os.path.getsize(temp_file_path)
+        )
+        db.add(file_)
+        db.commit()
+        db.refresh(file_)
+        for chunk in uploaded_chunks:
+            db.add(
+                FileChunk(
+                    file_id=file_.id,
+                    chunk_name=chunk["chunk_name"],
+                    chunk_number=chunk["chunk_number"],
+                    drive_file_id=chunk["drive_file_id"],
+                    drive_account=chunk["drive_account"],
+                    size=chunk["size"],
+                )
+            )
+            db.commit()
+
         os.remove(temp_file_path)
+        for chunk_path in chunk_paths:
+            os.remove(chunk_path)
 
         return {
             "message": "File uploaded successfully",
