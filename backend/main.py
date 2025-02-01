@@ -1,17 +1,21 @@
+import io
 import os
 import json
 from pathlib import Path
 import tempfile
+
 
 from db.utils import get_db
 from db.models import User, GoogleDrive, FileInfo, FileChunk
 from fastapi import Depends
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 from googleapiclient.http import MediaFileUpload
 from sqlalchemy.orm import Session
 from sqlalchemy import update
@@ -114,13 +118,122 @@ def auth_callback(code: str, db: Session = Depends(get_db)):
 
 
 @app.get("/api/files")
-def list_files(db: Session = Depends(get_db)):
+async def list_files(db: Session = Depends(get_db)):
+    """List files from Google Drive ( currently sends only the filenames list )"""
     # TODO : add JWT in headers
     # TODO : get creds from db
-    creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    service = build("drive", "v3", credentials=creds)
-    results = service.files().list(pageSize=10, fields="files(id, name)").execute()
-    return results.get("files", [])
+    # this is now hardcoded for the demo
+    result = db.query(FileInfo).filter(FileInfo.user_id == 1).all()
+    files = [file.file_name for file in result]
+
+    return {"files": files}
+
+
+# @app.get("/api/get_file")
+# async def get_file(file_name: str, db: Session = Depends(get_db)):
+#     """Reassemble and return a file from its chunks."""
+
+#     file_info = db.query(FileInfo).filter(FileInfo.file_name == file_name).first()
+#     if not file_info:
+#         raise HTTPException(status_code=404, detail="File not found")
+
+#     file_chunks = (
+#         db.query(FileChunk)
+#         .filter(FileChunk.file_id == file_info.id)
+#         .order_by(FileChunk.chunk_number)
+#         .all()
+#     )
+#     if not file_chunks:
+#         raise HTTPException(status_code=404, detail="File chunks not found")
+
+#     assembled_file = io.BytesIO()
+
+#     for chunk in file_chunks:
+#         # Get credentials for the associated Google Drive account
+#         drive_account = (
+#             db.query(GoogleDrive)
+#             .filter(GoogleDrive.email == chunk.drive_account)
+#             .first()
+#         )
+#         if not drive_account:
+#             raise HTTPException(
+#                 status_code=500, detail=f"Drive account {chunk.drive_account} not found"
+#             )
+
+#         creds = Credentials.from_authorized_user_info(json.loads(drive_account.creds))
+#         drive_service = build("drive", "v3", credentials=creds)
+
+#         # Download the chunk
+#         request = drive_service.files().get_media(fileId=chunk.drive_file_id)
+#         chunk_data = io.BytesIO()
+#         downloader = MediaIoBaseDownload(chunk_data, request)
+#         done = False
+#         while not done:
+#             status, done = downloader.next_chunk()
+
+#         # Write to assembled file in correct order
+#         assembled_file.write(chunk_data.getvalue())
+
+#     assembled_file.seek(0)  # Reset file pointer for streaming
+
+#     # Return as a downloadable file
+#     return StreamingResponse(
+#         assembled_file,
+#         media_type="application/octet-stream",
+#         headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
+#     )
+
+
+async def chunk_generator(file_chunks, db):
+    """Generator function to stream file chunks from Google Drive"""
+    for chunk in file_chunks:
+        # Get credentials for the associated Google Drive account
+        drive_account = (
+            db.query(GoogleDrive)
+            .filter(GoogleDrive.email == chunk.drive_account)
+            .first()
+        )
+        if not drive_account:
+            raise HTTPException(
+                status_code=500, detail=f"Drive account {chunk.drive_account} not found"
+            )
+
+        creds = Credentials.from_authorized_user_info(json.loads(drive_account.creds))
+        drive_service = build("drive", "v3", credentials=creds)
+
+        # Download the chunk
+        request = drive_service.files().get_media(fileId=chunk.drive_file_id)
+        chunk_data = io.BytesIO()
+        downloader = MediaIoBaseDownload(chunk_data, request)
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+            yield chunk_data.getvalue()  # Stream chunk data
+            chunk_data.seek(0)
+            chunk_data.truncate(0)  # Clear buffer for next chunk
+
+
+@app.get("/api/get_file")
+async def get_file(file_name: str, db: Session = Depends(get_db)):
+    """Reassemble and stream a file from its chunks."""
+    file_info = db.query(FileInfo).filter(FileInfo.file_name == file_name).first()
+    if not file_info:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    file_chunks = (
+        db.query(FileChunk)
+        .filter(FileChunk.file_id == file_info.id)
+        .order_by(FileChunk.chunk_number)
+        .all()
+    )
+    if not file_chunks:
+        raise HTTPException(status_code=404, detail="File chunks not found")
+
+    return StreamingResponse(
+        chunk_generator(file_chunks, db),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
+    )
 
 
 def split_file(input_file_path: str, chunk_size: int = 100 * 1024 * 1024) -> list[str]:
@@ -169,9 +282,7 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
 
         current_account_idx = 0
         for idx, chunk_path in enumerate(chunk_paths):
-            # Select account using round-robin
             account = accounts[current_account_idx % len(accounts)]
-
             # Create credentials from account info
             creds = Credentials(
                 token=None,
@@ -201,7 +312,6 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
                 .create(body=file_metadata, media_body=media, fields="id")
                 .execute()
             )
-
             # Store metadata
             uploaded_chunks.append(
                 {
@@ -253,6 +363,7 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
 
     except Exception as e:
         # Cleanup any remaining temporary files
+        print(e)
         if "temp_file_path" in locals() and os.path.exists(temp_file_path):
             os.remove(temp_file_path)
         if "chunk_paths" in locals():
