@@ -16,6 +16,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import useAxiosPublic from "../hooks/AxiosPublic";
 
 const FileUpload: React.FC = () => {
   const [uploadType, setUploadType] = useState<"file" | "folder">("file");
@@ -24,6 +25,7 @@ const FileUpload: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const axiosPublic = useAxiosPublic();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -92,17 +94,17 @@ const FileUpload: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8000/api/upload", {
-        method: "POST",
-        body: formData,
+      const response = await axiosPublic.post("/api/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
 
-      if (!response.ok) {
+      if (!response) {
         throw new Error("Upload failed");
       }
 
-      const result = await response.json();
-      console.log("Upload successful:", result);
+      console.log("Upload successful:", response.data);
       toast.success("File uploaded successfully!", {
         position: "top-right",
         autoClose: 2000,
