@@ -124,7 +124,10 @@ async def list_files(db: Session = Depends(get_db)):
     # TODO : get creds from db
     # this is now hardcoded for the demo
     result = db.query(FileInfo).filter(FileInfo.user_id == 1).all()
-    files = [file.file_name for file in result]
+    files = [
+        {"name": file.file_name, "type": file.file_name.split(".")[-1]}
+        for file in result
+    ]
 
     return {"files": files}
 
