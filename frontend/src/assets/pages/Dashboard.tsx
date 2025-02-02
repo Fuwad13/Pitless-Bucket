@@ -1,20 +1,94 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import FileUpload from "../modals/FileUpload";
-import { Folder, File, Settings, Home, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Home, Menu, Settings } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
+import FileCard from "../customComponents/FileCard";
+import FileUpload from "../modals/FileUpload";
+import useAxiosPublic from "../hooks/AxiosPublic";
 
-// dummy data to see if the card style works remove it later when we add the backend data fetch
-const filesAndFolders = [
-  { id: 1, name: "Project Files", type: "folder" },
-  { id: 2, name: "Resume.pdf", type: "file" },
-  { id: 3, name: "Design Assets", type: "folder" },
-  { id: 4, name: "Meeting Notes.docx", type: "file" },
-];
+interface FileType {
+  name: string;
+  type: string;
+}
 
 const Dashboard: React.FC = () => {
+  const axiosPublic = useAxiosPublic();
+  const [files, setFiles] = useState<FileType[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const useFetchFiles = () => {
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          const response = await axiosPublic("/api/files");
+
+          if (!response) {
+            throw new Error("Failed to fetch files");
+          }
+
+          console.log("Files fetched successfully:", response.data.files);
+          setFiles(response.data.files);
+        } catch (error) {
+          setError((error as Error).message);
+          console.error("Error fetching files:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
+    }, []);
+
+    return { files, error, loading };
+  };
+  const handleDownload = async (file: FileType) => {
+    try {
+      const response = await axiosPublic.get("/api/get_file", {
+        params: { file_name: file.name },
+        responseType: "blob",
+      });
+
+      const blob = new Blob([response.data]);
+
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      window.URL.revokeObjectURL(url);
+      console.log(`Downloaded: ${file.name}`);
+      toast.success("File downloaded successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download file!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+    }
+  };
+
+  useFetchFiles();
   return (
     <div className="flex min-h-screen">
       {/* Sidebar for Large Screens, we see this at desktop*/}
@@ -23,7 +97,7 @@ const Dashboard: React.FC = () => {
         <nav className="space-y-3">
           <FileUpload />
           <Link
-            to="/"
+            to="/dashboard"
             className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
           >
             <Home size={20} /> Home
@@ -49,7 +123,7 @@ const Dashboard: React.FC = () => {
           <nav className="space-y-4">
             <FileUpload />
             <Link
-              to="/"
+              to="/dashboard"
               className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
             >
               <Home size={20} /> Home
@@ -71,25 +145,15 @@ const Dashboard: React.FC = () => {
           Your Files & Folders
         </h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          {filesAndFolders.map((item) => (
-            <Card key={item.id} className="hover:shadow-md transition">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {item.type === "folder" ? (
-                    <Folder className="text-blue-500" />
-                  ) : (
-                    <File className="text-gray-500" />
-                  )}
-                  {item.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 text-sm">
-                  {item.type === "folder" ? "Folder" : "File"}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          {loading ? (
+            <p>Loading files...</p>
+          ) : error ? (
+            <p className="text-red-500">{error}</p>
+          ) : (
+            files.map((file) => (
+              <FileCard key={file.id} file={file} onDownload={handleDownload} />
+            ))
+          )}
         </div>
       </main>
     </div>

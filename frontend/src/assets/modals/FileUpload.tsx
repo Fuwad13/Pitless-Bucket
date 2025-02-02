@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Upload, Folder, File, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "react-toastify";
 import {
   Dialog,
   DialogTrigger,
@@ -21,6 +22,7 @@ const FileUpload: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,6 +91,7 @@ const FileUpload: React.FC = () => {
     });
 
     try {
+      setLoading(true);
       const response = await fetch("http://localhost:8000/api/upload", {
         method: "POST",
         body: formData,
@@ -100,12 +103,31 @@ const FileUpload: React.FC = () => {
 
       const result = await response.json();
       console.log("Upload successful:", result);
+      toast.success("File uploaded successfully!", {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
     } catch (error) {
       console.error("Error uploading files:", error);
-      alert("Upload failed. Please try again.");
+      toast.error("Failed to upload file", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
     } finally {
+      setLoading(false);
       setSelectedFiles([]);
-      setIsDialogOpen(false);
     }
   };
 
@@ -213,9 +235,15 @@ const FileUpload: React.FC = () => {
             </div>
           )}
 
-          <Button onClick={handleUpload} className="w-full">
-            Upload
-          </Button>
+          {!loading ? (
+            <Button onClick={handleUpload} className="w-full">
+              Upload
+            </Button>
+          ) : (
+            <Button onClick={handleUpload} disabled className="w-full">
+              Uploading
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
