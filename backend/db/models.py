@@ -46,6 +46,7 @@ class FileInfo(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     file_name = Column(String, nullable=False)
+    file_type = Column(String, nullable=False)
     size = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.UTC))
 
