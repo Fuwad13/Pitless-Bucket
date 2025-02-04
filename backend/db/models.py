@@ -5,6 +5,8 @@ import datetime
 
 Base = declarative_base()
 
+# TODO : ADD ON DELETE CASCADE TO FOREIGN KEYS
+
 
 class User(Base):
     __tablename__ = "user"
@@ -46,12 +48,14 @@ class FileInfo(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     file_name = Column(String, nullable=False)
-    file_type = Column(String, nullable=False)
+    file_type = Column(String, default="unknown_type")
     size = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.UTC))
 
     user = relationship("User", back_populates="files")
-    chunks = relationship("FileChunk", back_populates="file")  # Added relationship
+    chunks = relationship(
+        "FileChunk", back_populates="file", cascade="all, delete-orphan"
+    )
 
 
 class FileChunk(Base):
