@@ -137,39 +137,41 @@ def list_files(db: Session = Depends(get_db)):
     return {"files": files}
 
 
-def chunk_generator(file_chunks, db):
-    """Generator function to stream file chunks from Google Drive"""
+def fetch_drive_service(email, db):
+    """Fetch Google Drive service for a specific user (Reuse credentials)"""
+    drive_account = db.query(GoogleDrive).filter(GoogleDrive.email == email).first()
+    if not drive_account:
+        raise HTTPException(status_code=500, detail=f"Drive account {email} not found")
+
+    creds = Credentials.from_authorized_user_info(json.loads(drive_account.creds))
+    return build("drive", "v3", credentials=creds)
+
+
+def chunk_generator(file_chunks, drive_services):
+    """Generator function to stream file chunks from Google Drive with optimized chunk size"""
     for chunk in file_chunks:
-        # Get credentials for the associated Google Drive account
-        drive_account = (
-            db.query(GoogleDrive)
-            .filter(GoogleDrive.email == chunk.drive_account)
-            .first()
-        )
-        if not drive_account:
-            raise HTTPException(
-                status_code=500, detail=f"Drive account {chunk.drive_account} not found"
-            )
-
-        creds = Credentials.from_authorized_user_info(json.loads(drive_account.creds))
-        drive_service = build("drive", "v3", credentials=creds)
-
-        # Download the chunk
+        drive_service = drive_services[chunk.drive_account]
         request = drive_service.files().get_media(fileId=chunk.drive_file_id)
-        chunk_data = io.BytesIO()
-        downloader = MediaIoBaseDownload(chunk_data, request)
+
+        chunk_stream = io.BytesIO()
+        downloader = MediaIoBaseDownload(chunk_stream, request)
+
         done = False
         while not done:
             status, done = downloader.next_chunk()
-            yield chunk_data.getvalue()  # Stream chunk data
-            chunk_data.seek(0)
-            chunk_data.truncate(0)  # Clear buffer for next chunk
+            # Yield downloaded data immediately
+            chunk_stream.seek(0)
+            data = chunk_stream.read()
+            if data:
+                yield data
+            chunk_stream.seek(0)
+            chunk_stream.truncate(0)
 
 
 @app.get("/api/get_file")
-def get_file(file_name: str, db: Session = Depends(get_db)):
-    """Reassemble and stream a file from its chunks."""
-    file_info = db.query(FileInfo).filter(FileInfo.file_name == file_name).first()
+def get_file(file_id: int, db: Session = Depends(get_db)):
+    """Reassemble and stream a file from its chunks with optimized performance"""
+    file_info = db.query(FileInfo).filter(FileInfo.id == file_id).first()
     if not file_info:
         raise HTTPException(status_code=404, detail="File not found")
 
@@ -182,11 +184,17 @@ def get_file(file_name: str, db: Session = Depends(get_db)):
     if not file_chunks:
         raise HTTPException(status_code=404, detail="File chunks not found")
 
+    # Prefetch all required drive services to avoid repeated database queries
+    drive_accounts = {chunk.drive_account for chunk in file_chunks}
+    drive_services = {
+        account: fetch_drive_service(account, db) for account in drive_accounts
+    }
+
     return StreamingResponse(
-        chunk_generator(file_chunks, db),
+        chunk_generator(file_chunks, drive_services),
         media_type="application/octet-stream",
         headers={
-            "Content-Disposition": f'attachment; filename="{file_name}"',
+            "Content-Disposition": f'attachment; filename="{file_info.file_name}"',
             "Content-Length": str(file_info.size),
             "Accept-Ranges": "bytes",
         },
