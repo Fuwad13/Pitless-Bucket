@@ -2,6 +2,8 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from backend.auth.routes import auth_router
+
+# from backend.drive.routes import drive_router
 from backend.logs.logger import get_logger
 from backend.db.main import init_db
 
@@ -28,3 +30,4 @@ app = FastAPI(
 )
 
 app.include_router(auth_router, prefix=f"/api/{version}/auth", tags=["auth"])
+# app.include_router(drive_router, prefix=f"/api/{version}/drive", tags=["drive"])

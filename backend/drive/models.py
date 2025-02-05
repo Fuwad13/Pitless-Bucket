@@ -1,38 +1,41 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 import uuid
-from sqlalchemy.dialects.postgresql import UUID, JSON, TIMESTAMP
+from sqlalchemy.dialects.postgresql import UUID, JSON, TIMESTAMP, BIGINT
 from sqlmodel import Field, Relationship, SQLModel, Column
+
+from backend.auth.models import User
 
 # --------------------------
 # User Model
 # --------------------------
 
 
-class User(SQLModel, table=True):
-    __tablename__ = "user"
-    uid: uuid.UUID = Field(
-        sa_column=Column(
-            UUID,
-            nullable=False,
-            primary_key=True,
-            default=uuid.uuid4,
-        )
-    )
-    name: str
-    email: str = Field(index=True, sa_column_kwargs={"unique": True})
-    created_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
-    updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
+# class User(SQLModel, table=True):
+#     __tablename__ = "user"
+#     uid: uuid.UUID = Field(
+#         sa_column=Column(
+#             UUID,
+#             nullable=False,
+#             primary_key=True,
+#             default=uuid.uuid4,
+#         )
+#     )
+#     display_name: str
+#     username: str
+#     email: str = Field(index=True, sa_column_kwargs={"unique": True})
+#     created_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
+#     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
 
-    drives: List["GoogleDrive"] = Relationship(
-        back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"}
-    )
-    files: List["FileInfo"] = Relationship(
-        back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"}
-    )
+#     drives: List["GoogleDrive"] = Relationship(
+#         back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+#     )
+#     files: List["FileInfo"] = Relationship(
+#         back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+#     )
 
-    def __repr__(self):
-        return f"<User(id={self.uid}, name={self.name}, email={self.email}, created_at={self.created_at})>"
+#     def __repr__(self):
+#         return f"<User(id={self.uid}, name={self.name}, email={self.email}, created_at={self.created_at})>"
 
 
 # --------------------------
@@ -54,8 +57,8 @@ class GoogleDrive(SQLModel, table=True):
     user_id: uuid.UUID = Field(foreign_key="user.uid")
     email: str = Field(index=True, sa_column_kwargs={"unique": True})
     creds: dict = Field(sa_column=Column(JSON))
-    used_space: int = Field(default=0)
-    available_space: int
+    used_space: int = Field(sa_column=Column(BIGINT), default=0)
+    available_space: int = Field(sa_column=Column(BIGINT), default=0)
 
     user: "User" = Relationship(back_populates="drives")
 
@@ -86,7 +89,7 @@ class FileInfo(SQLModel, table=True):
     file_name: str
     content_type: str = Field(default="unknown_type")
     extension: str = Field(default="unknown_ext")
-    size: int
+    size: int = Field(sa_column=Column(BIGINT))
     created_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
 
@@ -117,7 +120,7 @@ class FileChunk(SQLModel, table=True):
     chunk_number: int
     drive_file_id: str
     drive_account: str
-    size: int
+    size: int = Field(sa_column=Column(BIGINT))
     created_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
 
