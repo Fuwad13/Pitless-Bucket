@@ -9,7 +9,7 @@ from backend.auth.models import User
 # --------------------------
 # User Model
 # --------------------------
-
+# moved to backend/auth/models.py
 
 # class User(SQLModel, table=True):
 #     __tablename__ = "user"

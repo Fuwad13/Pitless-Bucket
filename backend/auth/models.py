@@ -5,6 +5,11 @@ from sqlalchemy.dialects.postgresql import UUID, JSON, TIMESTAMP, BIGINT
 from sqlmodel import Field, Relationship, SQLModel, Column
 
 
+# --------------------------
+# User Model
+# --------------------------
+
+
 class User(SQLModel, table=True):
     __tablename__ = "user"
     uid: uuid.UUID = Field(
