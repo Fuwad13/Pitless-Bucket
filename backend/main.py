@@ -130,7 +130,7 @@ def list_files(db: Session = Depends(get_db)):
     # this is now hardcoded for the demo
     result = db.query(FileInfo).filter(FileInfo.user_id == 1).all()
     files = [
-        {"name": file.file_name, "type": file.file_type, "id": file.id}
+        {"name": file.file_name, "type": file.file_type, "id": file.id, "size": file.size}
         for file in result
     ]
 

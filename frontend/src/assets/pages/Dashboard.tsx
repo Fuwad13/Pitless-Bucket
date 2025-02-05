@@ -11,6 +11,7 @@ import useAxiosPublic from "../hooks/AxiosPublic";
 interface FileType {
   name: string;
   type: string;
+  id: number;
 }
 
 const Dashboard: React.FC = () => {
@@ -43,10 +44,11 @@ const Dashboard: React.FC = () => {
 
     return { files, error, loading };
   };
+
   const handleDownload = async (file: FileType) => {
     try {
       const response = await axiosPublic.get("/api/get_file", {
-        params: { file_name: file.name },
+        params: { file_id: file.id },
         responseType: "blob",
       });
 
@@ -62,7 +64,7 @@ const Dashboard: React.FC = () => {
       document.body.removeChild(a);
 
       window.URL.revokeObjectURL(url);
-      console.log(`Downloaded: ${file.name}`);
+      console.log(`Downloaded: ${file.id}`);
       toast.success("File downloaded successfully!", {
         position: "top-right",
         autoClose: 3000,
@@ -76,6 +78,39 @@ const Dashboard: React.FC = () => {
     } catch (error) {
       console.error("Download error:", error);
       toast.error("Failed to download file!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+    }
+  };
+
+  const handleDelete = async (file: FileType) => {
+    try {
+      const response = await axiosPublic.delete("/api/delete_file", {
+        params: { file_id: file.id },
+      });
+
+      console.log(`Deleted: ${file.id}`);
+
+      toast.success("File deleted successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete file!", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -151,7 +186,12 @@ const Dashboard: React.FC = () => {
             <p className="text-red-500">{error}</p>
           ) : (
             files.map((file) => (
-              <FileCard key={file.id} file={file} onDownload={handleDownload} />
+              <FileCard
+                key={file.id}
+                file={file}
+                onDownload={handleDownload}
+                onDelete={handleDelete}
+              />
             ))
           )}
         </div>

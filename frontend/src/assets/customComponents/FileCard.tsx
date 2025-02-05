@@ -9,10 +9,15 @@ interface FileCardProps {
     name: string;
     type: string;
   };
-  onDownload: (file: { name: string; type: string }) => Promise<void>;
+  onDownload: (file: {
+    name: string;
+    type: string;
+    id: number;
+  }) => Promise<void>;
+  onDelete: (file: { name: string; type: string; id: number }) => Promise<void>;
 }
 
-const FileCard: React.FC<FileCardProps> = ({ file, onDownload }) => {
+const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const fileNameWithoutExtension = file.name.includes(".")
@@ -27,6 +32,13 @@ const FileCard: React.FC<FileCardProps> = ({ file, onDownload }) => {
       console.error("Download error:", error);
     } finally {
       setIsDownloading(false);
+    }
+  };
+  const handleDelete = async (file: { name: string; type: string }) => {
+    try {
+      await onDelete(file);
+    } catch (error) {
+      console.error("Download error:", error);
     }
   };
 
@@ -74,7 +86,7 @@ const FileCard: React.FC<FileCardProps> = ({ file, onDownload }) => {
             </DropdownMenu.Item>
             <DropdownMenu.Item
               className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 cursor-pointer"
-              // onClick={() => handleDelete(file.id)}
+              onClick={() => handleDelete(file)}
             >
               <Trash2 size={16} className="text-red-500" /> Delete
             </DropdownMenu.Item>
