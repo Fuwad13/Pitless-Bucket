@@ -18,7 +18,11 @@ import {
 } from "@/components/ui/select";
 import useAxiosPublic from "../hooks/AxiosPublic";
 
-const FileUpload: React.FC = () => {
+interface FileUploadProps {
+  refreshFiles: () => void;
+}
+
+const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
   const [uploadType, setUploadType] = useState<"file" | "folder">("file");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -70,17 +74,6 @@ const FileUpload: React.FC = () => {
     setSelectedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
 
-  // const handleUpload = () => {
-  //   if (selectedFiles.length === 0) {
-  //     alert("Please select a file or folder to upload.");
-  //     return;
-  //   }
-
-  //   console.log("Uploading files:", selectedFiles);
-  //   setSelectedFiles([]);
-  //   setIsDialogOpen(false);
-  // };
-
   const handleUpload = async () => {
     if (selectedFiles.length === 0) {
       alert("Please select a file or folder to upload.");
@@ -130,6 +123,7 @@ const FileUpload: React.FC = () => {
     } finally {
       setLoading(false);
       setSelectedFiles([]);
+      refreshFiles();
     }
   };
 

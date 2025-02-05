@@ -19,32 +19,61 @@ const Dashboard: React.FC = () => {
   const [files, setFiles] = useState<FileType[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const useFetchFiles = () => {
-    useEffect(() => {
-      const fetchData = async () => {
-        try {
-          const response = await axiosPublic("/api/files");
 
-          if (!response) {
-            throw new Error("Failed to fetch files");
-          }
+  // const fetchFiles = () => {
+  //   useEffect(() => {
+  //     const fetchData = async () => {
+  //       try {
+  //         const response = await axiosPublic("/api/files");
 
-          console.log("Files fetched successfully:", response.data.files);
-          setFiles(response.data.files);
-        } catch (error) {
-          setError((error as Error).message);
-          console.error("Error fetching files:", error);
-        } finally {
-          setLoading(false);
+  //         if (!response) {
+  //           throw new Error("Failed to fetch files");
+  //         }
+  //         setFiles(response.data.files);
+  //       } catch (error) {
+  //         setError((error as Error).message);
+  //         console.error("Error fetching files:", error);
+  //       } finally {
+  //         setLoading(false);
+  //       }
+  //     };
+  //     console.log("fetched", files);
+  //     fetchData();
+  //   }, []);
+
+  //   return { files, error, loading };
+  // };
+
+  useEffect(() => {
+    const fetchFiles = async () => {
+      try {
+        const response = await axiosPublic.get("/api/files");
+        if (!response) {
+          throw new Error("Failed to fetch files");
         }
-      };
+        setFiles(response.data.files);
+      } catch (error) {
+        setError((error as Error).message);
+        console.error("Error fetching files:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      fetchData();
-    }, []);
+    fetchFiles();
+  }, []);
 
-    return { files, error, loading };
+  const refreshFiles = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosPublic.get("/api/files");
+      setFiles(response.data.files);
+    } catch (error) {
+      setError((error as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
-
   const handleDownload = async (file: FileType) => {
     try {
       const response = await axiosPublic.get("/api/get_file", {
@@ -97,7 +126,7 @@ const Dashboard: React.FC = () => {
       });
 
       console.log(`Deleted: ${file.id}`);
-
+      setFiles((prevFiles) => prevFiles.filter((f) => f.id !== file.id));
       toast.success("File deleted successfully!", {
         position: "top-right",
         autoClose: 3000,
@@ -123,14 +152,13 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  useFetchFiles();
   return (
     <div className="flex min-h-screen">
       {/* Sidebar for Large Screens, we see this at desktop*/}
       <aside className="hidden md:flex flex-col w-64 bg-blue-50 p-6 space-y-4 shadow-lg">
         <h2 className="text-2xl font-bold text-blue-600">Pitless Bucket</h2>
         <nav className="space-y-3">
-          <FileUpload />
+          <FileUpload refreshFiles={refreshFiles} />
           <Link
             to="/dashboard"
             className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
@@ -156,7 +184,7 @@ const Dashboard: React.FC = () => {
         </SheetTrigger>
         <SheetContent side="left">
           <nav className="space-y-4">
-            <FileUpload />
+            <FileUpload refreshFiles={refreshFiles} />
             <Link
               to="/dashboard"
               className="flex items-center gap-3 text-gray-700 hover:text-blue-600"
