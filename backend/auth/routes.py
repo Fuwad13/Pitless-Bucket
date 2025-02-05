@@ -28,7 +28,7 @@ flow = Flow.from_client_secrets_file(
 )
 
 
-@auth_router.get("/auth/google")
+@auth_router.get("/google")
 def auth_google() -> dict:
     """Returns the Google OAuth2 authorization URL"""
     authorization_url, state = flow.authorization_url(
@@ -37,7 +37,7 @@ def auth_google() -> dict:
     return {"auth_url": authorization_url}
 
 
-# @auth_router.get("/auth/google/callback")
+# @auth_router.get("/google/callback")
 # def auth_callback(code: str, db: Session = Depends(get_db)) -> dict:
 #     """Callback URL for Google OAuth2 authorization"""
 #     # TODO : handle errors

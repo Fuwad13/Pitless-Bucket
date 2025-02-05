@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 import uuid
-from sqlalchemy.dialects.postgresql import pg
+from sqlalchemy.dialects.postgresql import UUID, JSON, TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel, Column
 
 # --------------------------
@@ -13,7 +13,7 @@ class User(SQLModel, table=True):
     __tablename__ = "user"
     uid: uuid.UUID = Field(
         sa_column=Column(
-            pg.UUID,
+            UUID,
             nullable=False,
             primary_key=True,
             default=uuid.uuid4,
@@ -21,8 +21,8 @@ class User(SQLModel, table=True):
     )
     name: str
     email: str = Field(index=True, sa_column_kwargs={"unique": True})
-    created_at: datetime = Field(Column(pg.TIMESTAMP, default=datetime.now))
-    updated_at: datetime = Field(Column(pg.TIMESTAMP, default=datetime.now))
+    created_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
+    updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
 
     drives: List["GoogleDrive"] = Relationship(
         back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"}
@@ -45,15 +45,15 @@ class GoogleDrive(SQLModel, table=True):
 
     uid: uuid.UUID = Field(
         sa_column=Column(
-            pg.UUID,
+            UUID,
             nullable=False,
             primary_key=True,
             default=uuid.uuid4,
         )
     )
-    user_id: int = Field(foreign_key="user.id")
+    user_id: uuid.UUID = Field(foreign_key="user.uid")
     email: str = Field(index=True, sa_column_kwargs={"unique": True})
-    creds: str  # Storing JSON string.
+    creds: dict = Field(sa_column=Column(JSON))
     used_space: int = Field(default=0)
     available_space: int
 
@@ -76,19 +76,19 @@ class FileInfo(SQLModel, table=True):
 
     uid: uuid.UUID = Field(
         sa_column=Column(
-            pg.UUID,
+            UUID,
             nullable=False,
             primary_key=True,
             default=uuid.uuid4,
         )
     )
-    user_id: int = Field(foreign_key="user.id")
+    user_id: uuid.UUID = Field(foreign_key="user.uid")
     file_name: str
     content_type: str = Field(default="unknown_type")
     extension: str = Field(default="unknown_ext")
     size: int
-    created_at: datetime = Field(Column(pg.TIMESTAMP, default=datetime.now))
-    updated_at: datetime = Field(Column(pg.TIMESTAMP, default=datetime.now))
+    created_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
+    updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
 
     user: "User" = Relationship(back_populates="files")
     chunks: List["FileChunk"] = Relationship(
@@ -106,19 +106,19 @@ class FileChunk(SQLModel, table=True):
 
     uid: uuid.UUID = Field(
         sa_column=Column(
-            pg.UUID,
+            UUID,
             nullable=False,
             primary_key=True,
             default=uuid.uuid4,
         )
     )
-    file_id: int = Field(index=True, foreign_key="file_info.id")
+    file_id: uuid.UUID = Field(index=True, foreign_key="file_info.uid")
     chunk_name: str
     chunk_number: int
     drive_file_id: str
     drive_account: str
     size: int
-    created_at: datetime = Field(Column(pg.TIMESTAMP, default=datetime.now))
-    updated_at: datetime = Field(Column(pg.TIMESTAMP, default=datetime.now))
+    created_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
+    updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
 
     file: "FileInfo" = Relationship(back_populates="chunks")
