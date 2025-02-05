@@ -1,13 +1,12 @@
-from sqlalchemy import create_engine
+from sqlmodel import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine
+from backend.db.models import Base
+from backend.config import Config
 
-from db.models import Base
+engine = AsyncEngine(create_engine(url=Config.DATABASE_URL, echo=True))
 
-DATABASE_URL = "sqlite:///test.db"
-
-engine = create_engine(DATABASE_URL, echo=True)
-
-Base.metadata.create_all(engine)
+# Base.metadata.create_all(engine)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

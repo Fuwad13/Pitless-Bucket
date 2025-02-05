@@ -1,13 +1,13 @@
 import io
+from contextlib import asynccontextmanager
 import os
 import json
 from pathlib import Path
 import tempfile
-from urllib.parse import unquote
-
+from typing import List
 import aiofiles
-from db.utils import get_db
-from db.models import User, GoogleDrive, FileInfo, FileChunk
+from backend.db.utils import get_db
+from backend.db.models import User, GoogleDrive, FileInfo, FileChunk
 from fastapi import Depends
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,12 +20,26 @@ from googleapiclient.http import MediaIoBaseDownload
 from googleapiclient.http import MediaFileUpload
 from sqlalchemy.orm import Session
 from sqlalchemy import update
-from logger import get_logger
-import logging
+from backend.logs.logger import get_logger
 
-logger = get_logger(__name__)
-logger.debug("Starting the application")
-app = FastAPI()
+logger = get_logger(__name__, Path(__file__).parent / "logs/app.log")
+
+
+@asynccontextmanager
+def life_span(app: FastAPI):
+    logger.info("Server is starting......")
+    yield
+    logger.info("Server is shutting down......")
+
+
+version = "v1"
+
+app = FastAPI(
+    title="Pitless Bucket",
+    description="A REST API for Pitless Bucket - Distributed File Storage",
+    version=version,
+    lifespan=life_span,
+)
 
 # CORS middleware to allow React frontend to communicate with the backend
 app.add_middleware(
@@ -59,71 +73,8 @@ flow = Flow.from_client_secrets_file(
 )
 
 
-@app.get("/auth/google")
-def auth_google():
-    """Returns the Google OAuth2 authorization URL"""
-    authorization_url, state = flow.authorization_url(
-        access_type="offline", prompt="consent", include_granted_scopes="true"
-    )
-    return {"auth_url": authorization_url}
-
-
-@app.get("/auth/google/callback")
-def auth_callback(code: str, db: Session = Depends(get_db)):
-    """Callback URL for Google OAuth2 authorization"""
-    flow.fetch_token(code=code)
-    creds = flow.credentials
-    with open(Path(__file__).parent / "temp_token.json", "w") as f:
-        f.write(creds.to_json())
-    creds = Credentials.from_authorized_user_file(
-        Path(__file__).parent / "temp_token.json", SCOPES
-    )
-    # try:
-    #     os.remove(Path(__file__).parent / 'temp_token.json')
-    # except:
-    #     pass
-
-    # Get user info from Google
-    service = build("oauth2", "v2", credentials=creds)
-    user_info = service.userinfo().get().execute()
-    # Check if user exists
-    user = db.query(User).filter(User.email == user_info["email"]).first()
-    if not user:
-        # Create new user
-        user = User(name=user_info.get("name", "Unknown"), email=user_info["email"])
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    # Create GoogleDrive entry
-    existing_drive = (
-        db.query(GoogleDrive).filter(GoogleDrive.email == user_info["email"]).first()
-    )
-    if existing_drive:
-        stmt = (
-            update(GoogleDrive)
-            .where(GoogleDrive.email == user_info["email"])
-            .values(creds=creds.to_json())
-        )
-        db.execute(stmt)
-        db.commit()
-        db.refresh(existing_drive)
-    else:
-        drive = GoogleDrive(
-            user_id=user.id,
-            email=user_info["email"],
-            creds=creds.to_json(),
-            total_space=15 * 1024**3,  # 15GB in bytes
-        )
-        db.add(drive)
-        db.commit()
-        db.refresh(drive)
-
-    return {"message": "Authentication successful!"}
-
-
 @app.get("/api/files")
-def list_files(db: Session = Depends(get_db)):
+def list_files(db: Session = Depends(get_db)) -> dict:
     """List files from Google Drive ( currently sends only the filenames list )"""
     # TODO : add JWT in headers
     # TODO : get creds from db
@@ -138,11 +89,10 @@ def list_files(db: Session = Depends(get_db)):
         }
         for file in result
     ]
-
     return {"files": files}
 
 
-def fetch_drive_service(email, db):
+def fetch_drive_service(email: str, db: Session):
     """Fetch Google Drive service for a specific user (Reuse credentials)"""
     drive_account = db.query(GoogleDrive).filter(GoogleDrive.email == email).first()
     if not drive_account:
@@ -152,19 +102,23 @@ def fetch_drive_service(email, db):
     return build("drive", "v3", credentials=creds)
 
 
-def chunk_generator(file_chunks, drive_services):
+def chunk_generator(file_chunks: List[FileChunk], drive_services):
     """Generator function to stream file chunks from Google Drive with optimized chunk size"""
     for idx, chunk in enumerate(file_chunks):
         drive_service = drive_services[chunk.drive_account]
         request = drive_service.files().get_media(fileId=chunk.drive_file_id)
 
         chunk_stream = io.BytesIO()
-        downloader = MediaIoBaseDownload(chunk_stream, request)
+        downloader = MediaIoBaseDownload(
+            chunk_stream, request, chunksize=100 * 1024 * 1024
+        )
 
         done = False
         while not done:
             status, done = downloader.next_chunk()
-            # Yield downloaded data immediately
+            logger.info(
+                f"Downloading {chunk.chunk_name} chunk id : {chunk.chunk_number} - {status.progress() * 100:.2f}%"
+            )
             chunk_stream.seek(0)
             data = chunk_stream.read()
             if data:
@@ -405,4 +359,4 @@ def drive_about(db: Session = Depends(get_db), request: Request = None):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="localhost", port=8000, reload=True)
+    uvicorn.run("backend.main:app", host="localhost", port=8000, reload=True)
