@@ -1,17 +1,19 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from backend.db.main import get_session
 from sqlmodel.ext.asyncio.session import AsyncSession
+from .schemas import FileInfoModel, FileChunkModel, GoogleDriveModel
 
 drive_router = APIRouter()
 
 
-@drive_router.get("/files")
-def list_files(session: AsyncSession = Depends(get_session)) -> dict:
+@drive_router.get("/files", response_model=List[FileInfoModel])
+def list_files(session: AsyncSession = Depends(get_session)) -> List[FileInfoModel]:
     """List files from Google Drive ( currently sends only the filenames list )"""
     # TODO : add JWT in headers
     # TODO : get creds from db
     # this is now hardcoded for the demo
-    result = db.query(FileInfo).filter(FileInfo.user_id == 1).all()
+    # result = db.query(FileInfo).filter(FileInfo.user_id == 1).all()
     files = [
         {
             "name": file.file_name,

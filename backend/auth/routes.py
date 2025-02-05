@@ -4,13 +4,14 @@ from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from backend.config import Config
+from aiogoogle import Aiogoogle
+from aiogoogle.auth.utils import create_secret
+import json
 
 
 auth_router = APIRouter()
 
-# Load client secrets from credentials.json
-# TODO: handle this in more secure manner
-CLIENT_SECRETS_FILE = Path(__file__).parent.parent / "credentials.json"
 SCOPES = [
     "openid",
     "https://www.googleapis.com/auth/drive",
@@ -19,22 +20,30 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive.metadata",
 ]
 
-flow = Flow.from_client_secrets_file(
-    CLIENT_SECRETS_FILE,
-    scopes=SCOPES,
-    redirect_uri="http://localhost:8000/auth/google/callback",
-    autogenerate_code_verifier=True,
-    code_verifier=None,
-)
+CLIENT_CREDS = {
+    "client_id": Config.WEB_CLIENT_ID,
+    "client_secret": Config.WEB_CLIENT_SECRET,
+    "scopes": SCOPES,
+    "redirect_uri": "http://localhost:8000/auth/google/callback",
+}
+
+aiogoogle = Aiogoogle(client_creds=CLIENT_CREDS)
 
 
 @auth_router.get("/google")
-def auth_google() -> dict:
+def auth_google():
     """Returns the Google OAuth2 authorization URL"""
-    authorization_url, state = flow.authorization_url(
-        access_type="offline", prompt="consent", include_granted_scopes="true"
-    )
-    return {"auth_url": authorization_url}
+
+    if aiogoogle.oauth2.is_ready(CLIENT_CREDS):
+        uri = aiogoogle.oauth2.authorization_url(
+            client_creds=CLIENT_CREDS,
+            state=create_secret(),
+            access_type="offline",
+            include_granted_scopes=True,
+        )
+        return {"auth_url": uri}
+    else:
+        return {"error": "Something went wrong!"}
 
 
 # @auth_router.get("/google/callback")
