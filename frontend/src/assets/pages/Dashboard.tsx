@@ -76,25 +76,27 @@ const Dashboard: React.FC = () => {
   };
   const handleDownload = async (file: FileType) => {
     try {
-      const response = await axiosPublic.get("/api/get_file", {
-        params: { file_id: file.id },
-        responseType: "blob",
-      });
+      // const response = await axiosPublic.get("/api/get_file", {
+      //   params: { file_id: file.id },
+      //   responseType: "blob",
+      // });
+      
+      const downloadLink = axiosPublic.defaults.baseURL + "/api/get_file?file_id=" + file.id; 
 
-      const blob = new Blob([response.data]);
+      // const blob = new Blob([response.data]);
 
-      const url = window.URL.createObjectURL(blob);
+      // const url = window.URL.createObjectURL(blob);
 
       const a = document.createElement("a");
-      a.href = url;
+      a.href = downloadLink;
       a.download = file.name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
 
-      window.URL.revokeObjectURL(url);
-      console.log(`Downloaded: ${file.id}`);
-      toast.success("File downloaded successfully!", {
+      window.URL.revokeObjectURL(downloadLink);
+      console.log(`Download Starting: ${file.id} - ${file.name}`);
+      toast.success("File download starting soon!", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,

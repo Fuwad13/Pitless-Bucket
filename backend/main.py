@@ -130,7 +130,12 @@ def list_files(db: Session = Depends(get_db)):
     # this is now hardcoded for the demo
     result = db.query(FileInfo).filter(FileInfo.user_id == 1).all()
     files = [
-        {"name": file.file_name, "type": file.file_type, "id": file.id, "size": file.size}
+        {
+            "name": file.file_name,
+            "type": file.file_type,
+            "id": file.id,
+            "size": file.size,
+        }
         for file in result
     ]
 
@@ -149,7 +154,7 @@ def fetch_drive_service(email, db):
 
 def chunk_generator(file_chunks, drive_services):
     """Generator function to stream file chunks from Google Drive with optimized chunk size"""
-    for chunk in file_chunks:
+    for idx, chunk in enumerate(file_chunks):
         drive_service = drive_services[chunk.drive_account]
         request = drive_service.files().get_media(fileId=chunk.drive_file_id)
 
