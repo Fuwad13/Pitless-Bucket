@@ -9,7 +9,7 @@ async_engine = AsyncEngine(create_engine(url=Config.DATABASE_URL, echo=True))
 
 async def init_db():
     async with async_engine.begin() as conn:
-        from backend.drive.models import User, GoogleDrive, FileInfo
+        from backend.db.models import User, GoogleDrive, FileInfo, FileChunk
 
         await conn.run_sync(SQLModel.metadata.create_all)
 

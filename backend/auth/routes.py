@@ -1,13 +1,24 @@
+import json
 from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+
 from google_auth_oauthlib.flow import Flow
-from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select, update
+
+from backend.logs.logger import get_logger
 from backend.db.main import get_session
 from backend.config import Config
-import json
+from backend.db.models import User, GoogleDrive
+
+logger = get_logger(
+    __name__,
+    Path(__file__).parent.parent / "logs" / "auth.log",
+)
 
 
 auth_router = APIRouter()
@@ -57,49 +68,55 @@ async def auth_callback(
     """Callback URL for Google OAuth2 authorization"""
     try:
 
+        #  TODO : run this block asynchronuouly
         flow.fetch_token(code=code)
         creds = flow.credentials
-        creds = Credentials.from_authorized_user_info(creds.to_json())
+        creds = Credentials.from_authorized_user_info(json.loads(creds.to_json()))
         service = build("oauth2", "v2", credentials=creds)
         user_info = service.userinfo().get().execute()
+        # TODO : check if user exists , for demo 1 it is not necessary
+        stmt = select(User).where(User.email == user_info["email"])
+        resutl = await session.exec(stmt)
+        user = resutl.first()
+        if not user:
+            # create new user [ for demo 1 only ]
+            user = User(
+                display_name=user_info.get("name", "Unknown"),
+                username=user_info.get("name", "Unknown"),
+                email=user_info["email"],
+            )
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+
+        existing_drive = (
+            await session.exec(
+                select(GoogleDrive).where(GoogleDrive.email == user_info["email"])
+            )
+        ).first()
+        if existing_drive:
+            stmt = (
+                update(GoogleDrive)
+                .where(GoogleDrive.email == user_info["email"])
+                .values(creds=creds.to_json())
+            )
+            await session.exec(stmt)
+            await session.commit()
+            await session.refresh(existing_drive)
+        else:
+            drive = GoogleDrive(
+                user_id=user.uid,
+                email=user_info["email"],
+                creds=creds.to_json(),
+            )
+            session.add(drive)
+            await session.commit()
+            await session.refresh(drive)
+
+        return {"message": "Authentication successful!"}
 
     except Exception as e:
+        logger.error(f"Error in auth_callback: {e}")
         raise HTTPException(
             status_code=400, detail="Something went wrong, please try again"
         )
-
-    # Get user info from Google
-    # Check if user exists
-    user = db.query(User).filter(User.email == user_info["email"]).first()
-    if not user:
-        # Create new user
-        user = User(name=user_info.get("name", "Unknown"), email=user_info["email"])
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    # Create GoogleDrive entry
-    existing_drive = (
-        db.query(GoogleDrive).filter(GoogleDrive.email == user_info["email"]).first()
-    )
-    if existing_drive:
-        stmt = (
-            update(GoogleDrive)
-            .where(GoogleDrive.email == user_info["email"])
-            .values(creds=creds.to_json())
-        )
-        db.execute(stmt)
-        db.commit()
-        db.refresh(existing_drive)
-    else:
-        drive = GoogleDrive(
-            user_id=user.id,
-            email=user_info["email"],
-            creds=creds.to_json(),
-            total_space=15 * 1024**3,  # 15GB in bytes
-        )
-        db.add(drive)
-        db.commit()
-        db.refresh(drive)
-
-    return {"message": "Authentication successful!"}
