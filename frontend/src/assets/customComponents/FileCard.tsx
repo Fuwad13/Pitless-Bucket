@@ -2,29 +2,43 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MoreVertical, Download, Trash2 } from "lucide-react";
 import FileIcon from "../misc/FileIcon";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface FileCardProps {
   file: {
-    name: string;
-    type: string;
+    uid: string;
+    user_id: string;
+    file_name: string;
+    content_type: string;
+    extension: string;
+    size: number;
+    created_at: Date;
+    updated_at: Date;
   };
   onDownload: (file: {
-    name: string;
-    type: string;
-    id: number;
+    file_name: string;
+    extension: string;
+    uid: string;
   }) => Promise<void>;
-  onDelete: (file: { name: string; type: string; id: number }) => Promise<void>;
+  onDelete: (file: {
+    file_name: string;
+    extension: string;
+    uid: string;
+  }) => Promise<void>;
 }
 
 const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const fileNameWithoutExtension = file.name.includes(".")
-    ? file.name.substring(0, file.name.lastIndexOf("."))
-    : file.name;
+  const fileNameWithoutExtension = file.file_name.includes(".")
+    ? file.file_name.substring(0, file.file_name.lastIndexOf("."))
+    : file.file_name;
 
-  const handleDownload = async (file: { name: string; type: string }) => {
+  const handleDownload = async (file: {
+    file_name: string;
+    extension: string;
+    uid: string;
+  }) => {
     setIsDownloading(true);
     try {
       await onDownload(file);
@@ -34,29 +48,47 @@ const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
       setIsDownloading(false);
     }
   };
-  const handleDelete = async (file: { name: string; type: string }) => {
+  const handleDelete = async (file: {
+    file_name: string;
+    extension: string;
+    uid: string;
+  }) => {
     try {
       await onDelete(file);
     } catch (error) {
       console.error("Download error:", error);
     }
   };
+  const formatFileSize = (size: number): string => {
+    if (size === 0) return "0 Bytes";
+
+    const units = ["Bytes", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(size) / Math.log(1024));
+    const formattedSize = (size / Math.pow(1024, i)).toFixed(2);
+
+    return `${formattedSize} ${units[i]}`;
+  };
 
   return (
     <Card className="hover:shadow-lg transition-transform transform relative border border-gray-200">
       <CardHeader>
         <CardTitle className="flex items-center gap-3">
-          {FileIcon(file.type)}
+          {FileIcon(file.extension)}
           <span
             className="truncate min-h-8 overflow-hidden text-ellipsis whitespace-nowrap block max-w-[220px] md:max-w-[300px] lg:max-w-[400px]"
-            title={file.name}
+            title={file.file_name}
           >
             {fileNameWithoutExtension}
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-gray-500 text-sm font-medium">{file.type}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-gray-500 text-sm font-medium">{file.extension}</p>
+          <p className="text-gray-500 text-sm font-medium">
+            {formatFileSize(file.size)}
+          </p>
+        </div>
       </CardContent>
 
       {/* Dropdown Menu */}

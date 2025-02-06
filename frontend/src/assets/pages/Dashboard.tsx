@@ -1,17 +1,24 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, Menu, Settings } from "lucide-react";
+import { Home, Menu, Settings, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import FileCard from "../customComponents/FileCard";
 import FileUpload from "../modals/FileUpload";
 import useAxiosPublic from "../hooks/AxiosPublic";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
 
 interface FileType {
-  name: string;
-  type: string;
-  id: number;
+  uid: string;
+  user_id: string;
+  file_name: string;
+  content_type: string;
+  extension: string;
+  size: number;
+  created_at: Date;
+  updated_at: Date;
 }
 
 const Dashboard: React.FC = () => {
@@ -19,6 +26,8 @@ const Dashboard: React.FC = () => {
   const [files, setFiles] = useState<FileType[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+
+  const MySwal = withReactContent(Swal);
 
   // const fetchFiles = () => {
   //   useEffect(() => {
@@ -47,11 +56,11 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const response = await axiosPublic.get("/api/files");
+        const response = await axiosPublic.get("/api/v1/drive/files");
         if (!response) {
           throw new Error("Failed to fetch files");
         }
-        setFiles(response.data.files);
+        setFiles(response.data);
       } catch (error) {
         setError((error as Error).message);
         console.error("Error fetching files:", error);
@@ -66,8 +75,8 @@ const Dashboard: React.FC = () => {
   const refreshFiles = async () => {
     setLoading(true);
     try {
-      const response = await axiosPublic.get("/api/files");
-      setFiles(response.data.files);
+      const response = await axiosPublic.get("/api/v1/drive/files");
+      setFiles(response.data);
     } catch (error) {
       setError((error as Error).message);
     } finally {
@@ -77,11 +86,14 @@ const Dashboard: React.FC = () => {
   const handleDownload = async (file: FileType) => {
     try {
       // const response = await axiosPublic.get("/api/get_file", {
-      //   params: { file_id: file.id },
+      //   params: { file_id: file.uid },
       //   responseType: "blob",
       // });
-      
-      const downloadLink = axiosPublic.defaults.baseURL + "/api/get_file?file_id=" + file.id; 
+
+      const downloadLink =
+        axiosPublic.defaults.baseURL +
+        "/api/v1/drive/download?file_id=" +
+        file.uid;
 
       // const blob = new Blob([response.data]);
 
@@ -89,13 +101,13 @@ const Dashboard: React.FC = () => {
 
       const a = document.createElement("a");
       a.href = downloadLink;
-      a.download = file.name;
+      a.download = file.file_name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
 
       window.URL.revokeObjectURL(downloadLink);
-      console.log(`Download Starting: ${file.id} - ${file.name}`);
+      console.log(`Download Starting: ${file.uid} - ${file.file_name}`);
       toast.success("File download starting soon!", {
         position: "top-right",
         autoClose: 3000,
@@ -122,35 +134,47 @@ const Dashboard: React.FC = () => {
   };
 
   const handleDelete = async (file: FileType) => {
-    try {
-      const response = await axiosPublic.delete("/api/delete_file", {
-        params: { file_id: file.id },
-      });
+    const result = await MySwal.fire({
+      title: "Are you sure?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
 
-      console.log(`Deleted: ${file.id}`);
-      setFiles((prevFiles) => prevFiles.filter((f) => f.id !== file.id));
-      toast.success("File deleted successfully!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-      });
-    } catch (error) {
-      console.error("Delete error:", error);
-      toast.error("Failed to delete file!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-      });
+    if (result.isConfirmed) {
+      try {
+        await axiosPublic.delete("/api/v1/drive/delete_file", {
+          params: { file_id: file.uid },
+        });
+
+        setFiles((prevFiles) => prevFiles.filter((f) => f.uid !== file.uid));
+        toast.success("File deleted successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+        });
+      } catch (error) {
+        console.error("Delete error:", error);
+        toast.error("Failed to delete file!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+        });
+      }
     }
   };
 
@@ -211,13 +235,18 @@ const Dashboard: React.FC = () => {
         </h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           {loading ? (
-            <p>Loading files...</p>
+            <div className="min-h-screen flex justify-center items-center col-span-3">
+              <div className="flex flex-col-reverse items-center justify-center gap-2">
+                <p>Loading files</p>
+                <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+              </div>
+            </div>
           ) : error ? (
             <p className="text-red-500">{error}</p>
           ) : (
             files.map((file) => (
               <FileCard
-                key={file.id}
+                key={file.uid}
                 file={file}
                 onDownload={handleDownload}
                 onDelete={handleDelete}

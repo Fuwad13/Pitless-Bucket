@@ -87,11 +87,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
 
     try {
       setLoading(true);
-      const response = await axiosPublic.post("/api/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const response = await axiosPublic.post(
+        "/api/v1/drive/upload",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
       if (!response) {
         throw new Error("Upload failed");
