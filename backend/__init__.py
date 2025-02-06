@@ -5,10 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.auth.routes import auth_router
 
 # from backend.drive.routes import drive_router
-from backend.logs.logger import get_logger
+from backend.log.logger import get_logger
 from backend.db.main import init_db
 
-logger = get_logger(__name__, Path(__file__).parent / "logs" / "app.log")
+logger = get_logger(__name__, Path(__file__).parent / "log" / "app.log")
 
 
 @asynccontextmanager

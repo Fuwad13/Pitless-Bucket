@@ -10,14 +10,14 @@ from googleapiclient.discovery import build
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, update
 
-from backend.logs.logger import get_logger
+from backend.log.logger import get_logger
 from backend.db.main import get_session
 from backend.config import Config
 from backend.db.models import User, GoogleDrive
 
 logger = get_logger(
     __name__,
-    Path(__file__).parent.parent / "logs" / "auth.log",
+    Path(__file__).parent.parent / "log" / "auth.log",
 )
 
 
