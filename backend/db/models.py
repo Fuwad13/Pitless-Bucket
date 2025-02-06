@@ -83,7 +83,7 @@ class FileInfo(SQLModel, table=True):
             default=uuid.uuid4,
         )
     )
-    user_id: uuid.UUID = Field(foreign_key="user.uid")
+    user_id: uuid.UUID = Field(foreign_key="user.uid", index=True)
     file_name: str
     content_type: str = Field(default="unknown_type")
     extension: str = Field(default="unknown_ext")

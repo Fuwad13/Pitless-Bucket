@@ -23,7 +23,7 @@ def get_file_handler(log_file_path):
         encoding="utf-8",
     )
     file_handler.setFormatter(FORMATTER)
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(logging.DEBUG)
     return file_handler
 
 
