@@ -17,7 +17,7 @@ from backend.db.models import User, GoogleDrive
 
 logger = get_logger(
     __name__,
-    Path(__file__).parent.parent / "log" / "auth.log",
+    Path(__file__).parent.parent / "log" / "app.log",
 )
 
 

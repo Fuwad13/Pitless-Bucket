@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.auth.routes import auth_router
 
-# from backend.drive.routes import drive_router
+from backend.drive.routes import drive_router
 from backend.log.logger import get_logger
 from backend.db.main import init_db
 
@@ -40,4 +40,4 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix=f"/api/{version}/auth", tags=["auth"])
-# app.include_router(drive_router, prefix=f"/api/{version}/drive", tags=["drive"])
+app.include_router(drive_router, prefix=f"/api/{version}/drive", tags=["drive"])
