@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
@@ -52,7 +52,7 @@ flow = Flow.from_client_config(
 )
 
 
-@auth_router.get("/google")
+@auth_router.get("/google", status_code=status.HTTP_200_OK)
 def auth_google() -> dict:
     """Returns the Google OAuth2 authorization URL"""
     authorization_url, state = flow.authorization_url(
@@ -61,7 +61,7 @@ def auth_google() -> dict:
     return {"auth_url": authorization_url}
 
 
-@auth_router.get("/google/callback")
+@auth_router.get("/google/callback", status_code=status.HTTP_200_OK)
 async def auth_callback(
     code: str, session: AsyncSession = Depends(get_session)
 ) -> dict:
