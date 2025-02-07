@@ -83,7 +83,7 @@ const Dashboard: React.FC = () => {
       setLoading(false);
     }
   };
-  const handleDownload = async (file: FileType) => {
+  const handleDownload = async (file: { file_name: string; extension: string; uid: string; }) => {
     try {
       // const response = await axiosPublic.get("/api/get_file", {
       //   params: { file_id: file.uid },
@@ -133,7 +133,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleDelete = async (file: FileType) => {
+  const handleDelete = async (file: { file_name: string; extension: string; uid: string; }) => {
     const result = await MySwal.fire({
       title: "Are you sure?",
       text: "This action cannot be undone!",

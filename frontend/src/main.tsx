@@ -7,6 +7,7 @@ import Login from "./assets/pages/Login";
 import Root from "./assets/routes/root";
 import Home from "./assets/pages/Home";
 import Dashboard from "./assets/pages/Dashboard";
+import VideoStream from "./assets/pages/VideoStream";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
         path: "/dashboard",
         element: <Dashboard />,
       },
+      {
+        path: "/video-stream",
+        element: <VideoStream />,
+      }
     ],
   },
 ]);
