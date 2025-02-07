@@ -4,7 +4,7 @@ import os
 import io
 import uuid
 import tempfile
-from typing import List
+from typing import AsyncGenerator, List
 from pathlib import Path
 
 import aiofiles
@@ -192,6 +192,28 @@ async def delete_file(file_id: str, session: AsyncSession = Depends(get_session)
     return {"message": "File deleted successfully"}
 
 
+def sync_chunk_generator(file_chunks: List[FileChunk], drive_services):
+    """Sync generator function to stream file chunks from Google Drive"""
+    for idx, chunk in enumerate(file_chunks):
+        drive_service = drive_services[chunk.drive_account]
+        request = drive_service.files().get_media(fileId=chunk.drive_file_id)
+
+        chunk_stream = io.BytesIO()
+        downloader = MediaIoBaseDownload(chunk_stream, request)
+        done = False
+
+        while not done:
+            status, done = downloader.next_chunk()
+            chunk_stream.seek(0)
+            data = chunk_stream.read()
+            if data:
+                yield data
+            logger.debug(f"Done sending chunk {idx+1} of {len(file_chunks)}")
+
+            chunk_stream.seek(0)
+            chunk_stream.truncate(0)
+
+
 async def async_chunk_generator(file_chunks: List[FileChunk], drive_services):
     """Async generator function to stream file chunks from Google Drive"""
     for idx, chunk in enumerate(file_chunks):
@@ -214,7 +236,6 @@ async def async_chunk_generator(file_chunks: List[FileChunk], drive_services):
             data = chunk_stream.read()
             if data:
                 yield data
-
             chunk_stream.seek(0)
             chunk_stream.truncate(0)
 
@@ -244,7 +265,7 @@ async def download_file(file_id: str, session: AsyncSession = Depends(get_sessio
     }
 
     return StreamingResponse(
-        async_chunk_generator(file_chunks, gdrive_services),
+        sync_chunk_generator(file_chunks, gdrive_services),
         media_type="application/octet-stream",
         headers={
             "Content-Disposition": f'attachment; filename="{file_info.file_name}"',
@@ -275,6 +296,102 @@ async def rename_file(
     await session.commit()
 
     return {"message": "File renamed successfully"}
+
+
+@drive_router.get("/video-stream")
+async def stream_video(file_id: str, session: AsyncSession = Depends(get_session)):
+    """Stream a video file from Google Drive"""
+    stmt = select(FileInfo).where(FileInfo.uid == uuid.UUID(file_id))
+    result = await session.exec(stmt)
+    file_info = result.first()
+    if not file_info:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    stmt = select(FileChunk).where(FileChunk.file_id == file_info.uid)
+    result = await session.exec(stmt)
+    file_chunks = result.all()
+    if not file_chunks:
+        raise HTTPException(status_code=404, detail="File chunks not found")
+
+    drive_accounts = {chunk.drive_account for chunk in file_chunks}
+    gdrive_services = {
+        acc: await drive_service.async_get_api_service_by_email(
+            session, "drive", "v3", acc
+        )
+        for acc in drive_accounts
+    }
+
+    async def chunk_generator(
+        file_chunks: List[FileChunk], drive_services
+    ) -> AsyncGenerator[bytes, None]:
+        for idx, chunk in enumerate(file_chunks):
+            drive_service = drive_services[chunk.drive_account]
+            request = drive_service.files().get_media(fileId=chunk.drive_file_id)
+
+            downloader = MediaIoBaseDownload(io.BytesIO(), request)
+            done = False
+            while not done:
+                status, done = downloader.next_chunk()
+                downloader._fd.seek(0)
+                data = downloader._fd.read()
+                if data:
+                    yield data
+                    logger.debug(f"Done sending chunk {idx+1} of {len(file_chunks)}")
+                downloader._fd.seek(0)
+                downloader._fd.truncate(0)
+
+    headers = {
+        "content-type": "video/mp4",
+        "accept-ranges": "bytes",
+        "content-encoding": "identity",
+        "content-length": str(file_info.size),
+        "content-range": f"bytes 0-{file_info.size - 1}/{file_info.size}",
+    }
+
+    return StreamingResponse(
+        chunk_generator(file_chunks, gdrive_services),
+        media_type="video/mp4",
+        headers=headers,
+        status_code=status.HTTP_206_PARTIAL_CONTENT,
+    )
+
+
+# @drive_router.get("/stream-video")
+# async def stream_video(file_id: str, session: AsyncSession = Depends(get_session)):
+#     """Stream a video file from Google Drive"""
+#     stmt = select(FileInfo).where(FileInfo.uid == uuid.UUID(file_id))
+#     result = await session.exec(stmt)
+#     file_info = result.first()
+#     if not file_info:
+#         raise HTTPException(status_code=404, detail="File not found")
+
+#     stmt = select(FileChunk).where(FileChunk.file_id == file_info.uid)
+#     result = await session.exec(stmt)
+#     file_chunks = result.all()
+#     if not file_chunks:
+#         raise HTTPException(status_code=404, detail="File chunks not found")
+
+#     drive_accounts = {chunk.drive_account for chunk in file_chunks}
+#     gdrive_services = {
+#         acc: await drive_service.async_get_api_service_by_email(
+#             session, "drive", "v3", acc
+#         )
+#         for acc in drive_accounts
+#     }
+#     headers = {
+#         "content-type": "video/mp4",
+#         "accept-ranges": "bytes",
+#         "content-enconding": "identity",
+#         "content-length": str(file_info.size),
+#         "contnt-range": f"bytes 0-{file_info.size -1}/{file_info.size}",
+#     }
+
+#     return StreamingResponse(
+#         sync_chunk_generator(file_chunks, gdrive_services),
+#         media_type="video/mp4",
+#         headers=headers,
+#         status_code=status.HTTP_206_PARTIAL_CONTENT,
+#     )
 
 
 # @drive_router.get("/api/drive_about")
