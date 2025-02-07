@@ -151,11 +151,11 @@ async def upload_file(
     except Exception as e:
         logger.error(f"Error in upload_file: {e}")
         if "temp_file_path" in locals() and os.path.exists(temp_file_path):
-            await aiofiles.os.remove(temp_file_path)
+            await asyncio.to_thread(os.remove, temp_file_path)
         if "chunk_paths" in locals():
             for chunk_path in chunk_paths:
-                if await aiofiles.os.path.exists(chunk_path):
-                    await aiofiles.os.remove(chunk_path)
+                if os.path.exists(chunk_path):
+                    await asyncio.to_thread(os.remove, chunk_path)
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
@@ -192,20 +192,8 @@ async def delete_file(file_id: str, session: AsyncSession = Depends(get_session)
     return {"message": "File deleted successfully"}
 
 
-def fetch_drive_service(email: str, session: AsyncSession):
-    """Fetch Google Drive service for a specific user (Reuse credentials)"""
-    drive_account = (
-        session.query(GoogleDrive).filter(GoogleDrive.email == email).first()
-    )
-    if not drive_account:
-        raise HTTPException(status_code=500, detail=f"Drive account {email} not found")
-
-    creds = Credentials.from_authorized_user_info(json.loads(drive_account.creds))
-    return build("drive", "v3", credentials=creds)
-
-
-def chunk_generator(file_chunks: List[FileChunk], drive_services):
-    """Generator function to stream file chunks from Google Drive with optimized chunk size"""
+async def async_chunk_generator(file_chunks: List[FileChunk], drive_services):
+    """Async generator function to stream file chunks from Google Drive"""
     for idx, chunk in enumerate(file_chunks):
         drive_service = drive_services[chunk.drive_account]
         request = drive_service.files().get_media(fileId=chunk.drive_file_id)
@@ -214,24 +202,27 @@ def chunk_generator(file_chunks: List[FileChunk], drive_services):
         downloader = MediaIoBaseDownload(
             chunk_stream, request, chunksize=100 * 1024 * 1024
         )
-
         done = False
+
         while not done:
-            status, done = downloader.next_chunk()
+            status, done = await asyncio.to_thread(downloader.next_chunk)
             logger.info(
                 f"Downloading {chunk.chunk_name} chunk id : {chunk.chunk_number} - {status.progress() * 100:.2f}%"
             )
+
             chunk_stream.seek(0)
             data = chunk_stream.read()
             if data:
                 yield data
+
             chunk_stream.seek(0)
             chunk_stream.truncate(0)
 
 
-@drive_router.get("/download")
-async def get_file(file_id: str, session: AsyncSession = Depends(get_session)):
-    """Reassemble and stream a file from its chunks with optimized performance"""
+@drive_router.get("/download", status_code=status.HTTP_102_PROCESSING)
+async def download_file(file_id: str, session: AsyncSession = Depends(get_session)):
+    """Reassemble and stream a file from its chunks"""
+    # TODO : OPTIMIZE THIS
     stmt = select(FileInfo).filter(FileInfo.uid == file_id)
     result = await session.exec(stmt)
     file_info = result.first()
@@ -253,7 +244,7 @@ async def get_file(file_id: str, session: AsyncSession = Depends(get_session)):
     }
 
     return StreamingResponse(
-        chunk_generator(file_chunks, gdrive_services),
+        async_chunk_generator(file_chunks, gdrive_services),
         media_type="application/octet-stream",
         headers={
             "Content-Disposition": f'attachment; filename="{file_info.file_name}"',
@@ -261,6 +252,29 @@ async def get_file(file_id: str, session: AsyncSession = Depends(get_session)):
             "Accept-Ranges": "bytes",
         },
     )
+
+
+@drive_router.put("/reanme", status_code=status.HTTP_200_OK)
+async def rename_file(
+    file_id: str, new_name: str, session: AsyncSession = Depends(get_session)
+):
+    """Rename a file in Google Drive"""
+    stmt = select(FileInfo).where(FileInfo.uid == uuid.UUID(file_id))
+    result = await session.exec(stmt)
+    file_info = result.first()
+    if not file_info:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    file_info.file_name = new_name
+    stmt = (
+        update(FileInfo)
+        .where(FileInfo.uid == uuid.UUID(file_id))
+        .values(file_name=new_name)
+    )
+    await session.exec(stmt)
+    await session.commit()
+
+    return {"message": "File renamed successfully"}
 
 
 # @drive_router.get("/api/drive_about")
