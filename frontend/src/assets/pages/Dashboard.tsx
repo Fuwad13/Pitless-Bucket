@@ -73,7 +73,6 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const refreshFiles = async () => {
-    setLoading(true);
     try {
       const response = await axiosPublic.get("/api/v1/drive/files");
       setFiles(response.data);

@@ -12,6 +12,7 @@ import VideoStream from "./assets/pages/VideoStream";
 import { AuthProvider } from "./auth/AuthContext";
 import PrivateRoute from "./assets/routes/PrivateRoute";
 import GuestRoute from "./assets/routes/GuestRoute";
+import ImagePreview from "./assets/pages/ImagePreview";
 
 const router = createBrowserRouter([
   {
@@ -53,6 +54,10 @@ const router = createBrowserRouter([
       {
         path: "/video-stream",
         element: <VideoStream />,
+      },
+      {
+        path: "/image-preview",
+        element: <ImagePreview />,
       },
     ],
   },
