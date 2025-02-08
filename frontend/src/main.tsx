@@ -9,6 +9,8 @@ import Root from "./assets/routes/root";
 import Home from "./assets/pages/Home";
 import Dashboard from "./assets/pages/Dashboard";
 import VideoStream from "./assets/pages/VideoStream";
+import { AuthProvider } from "./auth/AuthContext";
+import PrivateRoute from "./assets/routes/PrivateRoute";
 
 const router = createBrowserRouter([
   {
@@ -29,7 +31,11 @@ const router = createBrowserRouter([
       },
       {
         path: "/dashboard",
-        element: <Dashboard />,
+        element: (
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        ),
       },
       {
         path: "/video-stream",
@@ -41,7 +47,9 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
-    <ToastContainer position="top-right" />
+    <AuthProvider>
+      <RouterProvider router={router} />
+      <ToastContainer position="top-right" />
+    </AuthProvider>
   </StrictMode>
 );

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@shadcn/ui": "^0.0.4",
     "firebase": "^11.3.0",
     "react-icons": "^5.4.0",
     "react-player": "^2.16.0",

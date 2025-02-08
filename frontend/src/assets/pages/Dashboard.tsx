@@ -83,7 +83,11 @@ const Dashboard: React.FC = () => {
       setLoading(false);
     }
   };
-  const handleDownload = async (file: { file_name: string; extension: string; uid: string; }) => {
+  const handleDownload = async (file: {
+    file_name: string;
+    extension: string;
+    uid: string;
+  }) => {
     try {
       // const response = await axiosPublic.get("/api/get_file", {
       //   params: { file_id: file.uid },
@@ -133,7 +137,11 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleDelete = async (file: { file_name: string; extension: string; uid: string; }) => {
+  const handleDelete = async (file: {
+    file_name: string;
+    extension: string;
+    uid: string;
+  }) => {
     const result = await MySwal.fire({
       title: "Are you sure?",
       text: "This action cannot be undone!",
@@ -181,8 +189,8 @@ const Dashboard: React.FC = () => {
   return (
     <div className="flex min-h-screen">
       {/* Sidebar for Large Screens, we see this at desktop*/}
-      <aside className="hidden md:flex flex-col w-64 bg-blue-50 p-6 space-y-4 shadow-lg">
-        <h2 className="text-2xl font-bold text-blue-600">Pitless Bucket</h2>
+      <aside className="hidden md:flex flex-col w-52 bg-blue-50 p-6 space-y-4 shadow-lg border-r">
+        {/* <h2 className="text-2xl font-bold text-blue-600">Pitless Bucket</h2> */}
         <nav className="space-y-3">
           <FileUpload refreshFiles={refreshFiles} />
           <Link
