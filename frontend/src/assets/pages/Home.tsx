@@ -16,7 +16,7 @@ const Home: React.FC = () => {
           Store, view and dowload you files with ease!
         </p>
         <Button>
-          <Link to="/login">Try Pitless Bucket for Free</Link>
+          <Link to="/signup">Try Pitless Bucket for Free</Link>
         </Button>
       </div>
     </div>
