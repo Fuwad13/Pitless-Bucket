@@ -1,6 +1,6 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MoreVertical, Download, Trash2, Play } from "lucide-react";
+import { MoreVertical, Download, Trash2, Play, Image } from "lucide-react";
 import FileIcon from "../misc/FileIcon";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +29,8 @@ interface FileCardProps {
 }
 
 const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
+  const allowedVideoExtensions = ["mp4", "webm", "mkv"];
+  const allowedImageExtensions = ["png", "jpg", "jpeg"];
   const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -106,12 +108,21 @@ const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
 
         <DropdownMenu.Portal>
           <DropdownMenu.Content className="min-w-[140px] bg-white border border-gray-200 rounded-md shadow-lg z-50">
-            {file.extension === "mp4" && (
+            {allowedVideoExtensions.includes(file.extension) && (
                 <DropdownMenu.Item
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                 onClick={() => navigate('/video-stream', { state: { url: `http://localhost:8000/api/v1/drive/video-stream?file_id=${file.uid}`} })}
                 >
                 <Play size={16} className="text-gray-500" /> Play
+                </DropdownMenu.Item>
+            )}
+            {allowedImageExtensions.includes(file.extension) && (
+                <DropdownMenu.Item
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                // TODO: Implement image preview
+                onClick={() => navigate('/image-preview', { state: { url: `http://localhost:8000/api/v1/drive/image-preview?file_id=${file.uid}`} })}
+                >
+                <Image size={16} className="text-gray-500" /> View Image
                 </DropdownMenu.Item>
             )}
             <DropdownMenu.Item
