@@ -8,10 +8,11 @@ from typing import AsyncGenerator, List
 from pathlib import Path
 
 import aiofiles
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, status
 from fastapi.responses import StreamingResponse
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+import httpx
 from backend.db.main import get_session
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 from sqlmodel import select, update
@@ -67,11 +68,11 @@ async def upload_file(
         result = await session.exec(stmt)
         accounts = []
         for drive in result:
-            oauth_service = await drive_service.async_get_api_service(
+            oauth_service, _ = await drive_service.async_get_api_service(
                 "oauth2", "v2", drive.creds
             )
             mail_addr = oauth_service.userinfo().get().execute().get("email")
-            gdrive_service = await drive_service.async_get_api_service(
+            gdrive_service, _ = await drive_service.async_get_api_service(
                 "drive", "v3", drive.creds
             )
             accounts.append(
@@ -179,7 +180,9 @@ async def delete_file(file_id: str, session: AsyncSession = Depends(get_session)
     for chunk in file_chunks:
         drive_mail = chunk.drive_account
         creds = await drive_service.get_creds_by_gmail(session, drive_mail)
-        gdrive_service = await drive_service.async_get_api_service("drive", "v3", creds)
+        gdrive_service, _ = await drive_service.async_get_api_service(
+            "drive", "v3", creds
+        )
         test = await drive_service.async_delete_file(
             gdrive_service, chunk.drive_file_id
         )
@@ -258,9 +261,11 @@ async def download_file(file_id: str, session: AsyncSession = Depends(get_sessio
 
     drive_accounts = {chunk.drive_account for chunk in file_chunks}
     gdrive_services = {
-        acc: await drive_service.async_get_api_service_by_email(
-            session, "drive", "v3", acc
-        )
+        acc: (
+            await drive_service.async_get_api_service_by_email(
+                session, "drive", "v3", acc
+            )
+        )[0]
         for acc in drive_accounts
     }
 
@@ -298,6 +303,41 @@ async def rename_file(
     return {"message": "File renamed successfully"}
 
 
+@drive_router.get("/image-preview")
+async def preview_image(file_id: str, session: AsyncSession = Depends(get_session)):
+    """Preview an image file from Google Drive"""
+    stmt = select(FileInfo).where(FileInfo.uid == uuid.UUID(file_id))
+    result = await session.exec(stmt)
+    file_info = result.first()
+    if not file_info:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    stmt = select(FileChunk).where(FileChunk.file_id == file_info.uid)
+    result = await session.exec(stmt)
+    file_chunks = result.all()
+    if not file_chunks:
+        raise HTTPException(status_code=404, detail="File chunks not found")
+
+    drive_accounts = {chunk.drive_account for chunk in file_chunks}
+    gdrive_services = {
+        acc: (
+            await drive_service.async_get_api_service_by_email(
+                session, "drive", "v3", acc
+            )
+        )[0]
+        for acc in drive_accounts
+    }
+
+    return StreamingResponse(
+        async_chunk_generator(file_chunks, gdrive_services),
+        media_type="image/jpeg",
+        headers={
+            "Content-Disposition": f'inline; filename="{file_info.file_name}"',
+            "Accept-Ranges": "bytes",
+        },
+    )
+
+
 @drive_router.get("/video-stream")
 async def stream_video(file_id: str, session: AsyncSession = Depends(get_session)):
     """Stream a video file from Google Drive"""
@@ -315,9 +355,11 @@ async def stream_video(file_id: str, session: AsyncSession = Depends(get_session
 
     drive_accounts = {chunk.drive_account for chunk in file_chunks}
     gdrive_services = {
-        acc: await drive_service.async_get_api_service_by_email(
-            session, "drive", "v3", acc
-        )
+        acc: (
+            await drive_service.async_get_api_service_by_email(
+                session, "drive", "v3", acc
+            )
+        )[0]
         for acc in drive_accounts
     }
 
@@ -356,7 +398,10 @@ async def stream_video(file_id: str, session: AsyncSession = Depends(get_session
     )
 
 
-# @drive_router.get("/stream-video")
+# This is the another version of the stream-video endpoint
+#  not fixed yet
+
+# @drive_router.get("/video-stream")
 # async def stream_video(file_id: str, session: AsyncSession = Depends(get_session)):
 #     """Stream a video file from Google Drive"""
 #     stmt = select(FileInfo).where(FileInfo.uid == uuid.UUID(file_id))
@@ -376,6 +421,88 @@ async def stream_video(file_id: str, session: AsyncSession = Depends(get_session
 #         acc: await drive_service.async_get_api_service_by_email(
 #             session, "drive", "v3", acc
 #         )
+#         for acc in drive_accounts
+#     }
+
+#     async def chunk_generator(
+#         file_chunks: List[FileChunk], drive_services
+#     ) -> AsyncGenerator[bytes, None]:
+#         async with httpx.AsyncClient(
+#             follow_redirects=True
+#         ) as client:  # Create a single client for efficiency
+#             for idx, chunk in enumerate(file_chunks):
+#                 drive_service = drive_services[chunk.drive_account][0]
+#                 drive_creds = drive_services[chunk.drive_account][1]
+#                 request = (
+#                     drive_service.files()
+#                     .get(fileId=chunk.drive_file_id, fields="id, webContentLink")
+#                     .execute()
+#                 )
+#                 media_url = request.get("webContentLink")
+#                 logger.debug(f"Download link for chunk {idx+1}: {media_url}")
+#                 headers = {
+#                     "Authorization": f"Bearer {drive_creds.token}",
+#                 }
+#                 async with client.stream("GET", media_url, headers=headers) as response:
+#                     if response.status_code != 200:
+#                         logger.error(
+#                             f"Error downloading chunk: {response} - {response.status_code}"
+#                         )
+#                         raise HTTPException(
+#                             status_code=response.status_code,
+#                             detail=f"Error downloading chunk: {response}",
+#                         )
+
+#                     async for (
+#                         data
+#                     ) in response.aiter_bytes():  # Yield data as it arrives!
+#                         if data:
+#                             yield data
+#                             logger.debug(
+#                                 f"Sent chunk {idx+1} of {len(file_chunks)}, size: {len(data)} bytes"
+#                             )
+
+#     headers = {
+#         "Content-Type": "video/mp4",
+#         "Accept-Ranges": "bytes",
+#         "Content-Encoding": "identity",
+#         "Content-Length": str(file_info.size),
+#         "Content-Range": f"bytes 0-{file_info.size - 1}/{file_info.size}",
+#     }
+
+#     return StreamingResponse(
+#         chunk_generator(file_chunks, gdrive_services),
+#         media_type="video/mp4",
+#         headers=headers,
+#         status_code=status.HTTP_206_PARTIAL_CONTENT,
+#     )
+
+
+# this is the initial implementation of video streaming
+
+
+# @drive_router.get("/stream-video")
+# async def stream_video(file_id: str, session: AsyncSession = Depends(get_session)):
+#     """Stream a video file from Google Drive"""
+#     stmt = select(FileInfo).where(FileInfo.uid == uuid.UUID(file_id))
+#     result = await session.exec(stmt)
+#     file_info = result.first()
+#     if not file_info:
+#         raise HTTPException(status_code=404, detail="File not found")
+
+#     stmt = select(FileChunk).where(FileChunk.file_id == file_info.uid)
+#     result = await session.exec(stmt)
+#     file_chunks = result.all()
+#     if not file_chunks:
+#         raise HTTPException(status_code=404, detail="File chunks not found")
+
+#     drive_accounts = {chunk.drive_account for chunk in file_chunks}
+#     gdrive_services = {
+#         acc: (
+#             await drive_service.async_get_api_service_by_email(
+#                 session, "drive", "v3", acc
+#             )
+#         )[0]
 #         for acc in drive_accounts
 #     }
 #     headers = {

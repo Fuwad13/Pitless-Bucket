@@ -2,7 +2,8 @@ import json
 import uuid
 import asyncio
 import aiofiles
-from typing import List
+from pathlib import Path
+from typing import List, Tuple
 from googleapiclient.discovery import build, Resource
 from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaFileUpload
@@ -11,6 +12,9 @@ from backend.drive.schemas import FileInfoModel, FileChunkModel, GoogleDriveMode
 from backend.auth.schemas import UserModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
+from backend.log.logger import get_logger
+
+logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
 
 
 class DriveService:
@@ -46,18 +50,22 @@ class DriveService:
 
         return chunk_paths
 
-    def get_api_service(self, api: str, version: str, credentials: str) -> Resource:
+    def get_api_service(
+        self, api: str, version: str, credentials: str
+    ) -> Tuple[Resource, Credentials]:
         creds = Credentials.from_authorized_user_info(json.loads(credentials))
-        return build(api, version, credentials=creds)
+        logger.debug(f"Credentials: {creds}")
+        logger.debug(f"{creds.token}")
+        return build(api, version, credentials=creds), creds
 
     async def async_get_api_service(
         self, api: str, version: str, credentials: str
-    ) -> Resource:
+    ) -> Tuple[Resource, Credentials]:
         return await asyncio.to_thread(self.get_api_service, api, version, credentials)
 
     async def async_get_api_service_by_email(
         self, session: AsyncSession, api: str, version: str, email: str
-    ) -> Resource:
+    ) -> Tuple[Resource, Credentials]:
         stmt = select(GoogleDrive).where(GoogleDrive.email == email)
         result = await session.exec(stmt)
         gdrive = result.first()
