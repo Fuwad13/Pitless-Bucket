@@ -54,8 +54,8 @@ class DriveService:
         self, api: str, version: str, credentials: str
     ) -> Tuple[Resource, Credentials]:
         creds = Credentials.from_authorized_user_info(json.loads(credentials))
-        logger.debug(f"Credentials: {creds}")
-        logger.debug(f"{creds.token}")
+        # logger.debug(f"Credentials: {creds}")
+        # logger.debug(f"{creds.token}")
         return build(api, version, credentials=creds), creds
 
     async def async_get_api_service(
