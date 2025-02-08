@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { getAuth } from "firebase/auth";
 import { LogOut } from "lucide-react";
+import { toast } from "react-toastify";
 
 const Navbar: React.FC = () => {
   const { currentUser } = useContext(AuthContext);
@@ -15,6 +16,7 @@ const Navbar: React.FC = () => {
       await signOut(auth);
       window.location.href = "/login";
       setIsDropdownOpen(false);
+      toast.success("Logged out successfully!");
     } catch (error) {
       console.error("Error logging out:", error);
       setIsDropdownOpen(false);
@@ -48,7 +50,7 @@ const Navbar: React.FC = () => {
                 />
               </div>
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 bg-white text-black shadow-md rounded-lg p-2 w-48">
+                <div className="absolute right-0 mt-2 bg-white text-black shadow-md rounded-lg p-2 w-48 z-50">
                   <h5 className="p-4 text-gray-600">
                     {currentUser?.displayName || "User"}
                   </h5>

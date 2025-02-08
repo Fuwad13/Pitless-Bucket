@@ -11,6 +11,7 @@ import Dashboard from "./assets/pages/Dashboard";
 import VideoStream from "./assets/pages/VideoStream";
 import { AuthProvider } from "./auth/AuthContext";
 import PrivateRoute from "./assets/routes/PrivateRoute";
+import GuestRoute from "./assets/routes/GuestRoute";
 
 const router = createBrowserRouter([
   {
@@ -19,15 +20,27 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <Home />,
+        element: (
+          <GuestRoute>
+            <Home />
+          </GuestRoute>
+        ),
       },
       {
         path: "/login",
-        element: <Login />,
+        element: (
+          <GuestRoute>
+            <Login />
+          </GuestRoute>
+        ),
       },
       {
         path: "/signup",
-        element: <Signup />,
+        element: (
+          <GuestRoute>
+            <Signup />
+          </GuestRoute>
+        ),
       },
       {
         path: "/dashboard",
