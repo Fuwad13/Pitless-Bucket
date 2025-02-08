@@ -8,39 +8,49 @@ import { FaGoogle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import {
   auth,
-  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signInWithPopup,
+  updateProfile,
   GoogleAuthProvider,
 } from "../../auth/firebase.init";
 
-export default function LoginPage() {
+export default function Signup() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleEmailLogin = async (e: FormEvent<HTMLFormElement>) => {
+  const handleEmailSignup = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      toast.success("Login Successful!");
+      const userInfo = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      await updateProfile(userInfo.user, {
+        displayName: name,
+        photoURL: "https://www.example.com/default-avatar.png",
+      });
+      toast.success("Signup Successful!");
       navigate("/dashboard");
     } catch (error) {
-      toast.error("Invalid email or password.");
-      setError("Invalid email or password.");
+      toast.error("Error creating account.");
+      setError("Error creating account.");
       console.log(error);
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignup = async () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      toast.success("Login Successful!");
+      toast.success("Welcome!");
       navigate("/dashboard");
     } catch (error) {
-      toast.error("Google login failed.");
+      toast.error("Google signup failed.");
       console.log(error);
     }
   };
@@ -49,9 +59,20 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
         <h1 className="text-2xl font-bold text-center text-gray-900">
-          Login to <span className="text-blue-600">Pitless Bucket</span>
+          Sign Up for <span className="text-blue-600">Pitless Bucket</span>
         </h1>
-        <form onSubmit={handleEmailLogin} className="space-y-4">
+        <form onSubmit={handleEmailSignup} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="Your Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -89,7 +110,7 @@ export default function LoginPage() {
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button type="submit" className="w-full">
-            Login
+            Sign Up
           </Button>
         </form>
         <div className="flex items-center justify-center space-x-2">
@@ -100,19 +121,19 @@ export default function LoginPage() {
         <div className="mt-4">
           <Button
             type="button"
-            onClick={handleGoogleLogin}
+            onClick={handleGoogleSignup}
             className="w-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center"
           >
             <FaGoogle />
-            <span className="mr-2">Login with Google</span>
+            <span className="mr-2">Sign Up with Google</span>
           </Button>
         </div>
         <p className="text-center text-sm text-gray-400">
-          Don't Have an Account?{" "}
-          <Link className="text-blue-500" to="/signup">
-            Create one
+          Already Have an Account?{" "}
+          <Link className="text-blue-500" to="/login">
+            Login
           </Link>{" "}
-          now!
+          instead
         </p>
       </div>
     </div>
