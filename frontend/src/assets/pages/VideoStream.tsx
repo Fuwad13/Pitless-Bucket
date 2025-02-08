@@ -1,13 +1,12 @@
-import React from 'react';
-import ReactPlayer from 'react-player';
-import { useLocation } from 'react-router-dom';
+import React from "react";
+import ReactPlayer from "react-player";
+import { useLocation } from "react-router-dom";
 
-
-const VideoStreamPage : React.FC = () => {
-    const location = useLocation();
-    const { url } = location.state as { url: string };
-    console.log(url);
-    return (
+const VideoStreamPage: React.FC = () => {
+  const location = useLocation();
+  const { url } = location.state as { url: string };
+  console.log(url);
+  return (
     <div className="flex min-h-screen">
       <aside className="hidden md:flex flex-col w-64 bg-blue-50 p-6 space-y-4 shadow-lg">
         <h2 className="text-2xl font-bold text-blue-600">Pitless Bucket</h2>

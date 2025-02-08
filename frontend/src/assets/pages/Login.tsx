@@ -3,7 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { toast } from "react-toastify";
+import { FaGoogle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import {
+  auth,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+} from "../../auth/firebase.init";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,18 +20,28 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleEmailLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
-
-    if (!email || !password) {
-      setError("Please fill in all fields");
-      return;
-    }
-    if (email == "temp@mail.com" && password == "123456") {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast.success("Login Successful!");
       navigate("/dashboard");
-    } else {
-      setError("Invalid credentials");
+    } catch (error) {
+      toast.error("Invalid email or password.");
+      setError("Invalid email or password.");
+      console.log(error);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      toast.success("Login Successful!");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error("Google login failed.");
+      console.log(error);
     }
   };
 
@@ -33,7 +51,7 @@ export default function LoginPage() {
         <h1 className="text-2xl font-bold text-center text-gray-900">
           Login to <span className="text-blue-600">Pitless Bucket</span>
         </h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleEmailLogin} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -74,6 +92,21 @@ export default function LoginPage() {
             Login
           </Button>
         </form>
+        <div className="flex items-center justify-center space-x-2">
+          <hr className="flex-1 border-t border-gray-300" />
+          <span className="text-gray-600">OR</span>
+          <hr className="flex-1 border-t border-gray-300" />
+        </div>
+        <div className="mt-4">
+          <Button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center"
+          >
+            <FaGoogle />
+            <span className="mr-2">Login with Google</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

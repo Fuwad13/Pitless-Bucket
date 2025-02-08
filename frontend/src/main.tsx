@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
 import { ToastContainer } from "react-toastify";
 import Login from "./assets/pages/Login";
+
 import Root from "./assets/routes/root";
 import Home from "./assets/pages/Home";
 import Dashboard from "./assets/pages/Dashboard";
@@ -13,7 +14,6 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <Root />,
-    // element: <Login />,
     children: [
       {
         path: "/",
@@ -23,6 +23,7 @@ const router = createBrowserRouter([
         path: "/login",
         element: <Login />,
       },
+
       {
         path: "/dashboard",
         element: <Dashboard />,
@@ -30,7 +31,7 @@ const router = createBrowserRouter([
       {
         path: "/video-stream",
         element: <VideoStream />,
-      }
+      },
     ],
   },
 ]);
