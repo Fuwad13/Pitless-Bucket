@@ -1,6 +1,6 @@
 import { AuthContext } from "../../auth/AuthContext";
 import React, { useContext, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { getAuth } from "firebase/auth";
 import { LogOut } from "lucide-react";
@@ -10,11 +10,12 @@ const Navbar: React.FC = () => {
   const { currentUser } = useContext(AuthContext);
   const auth = getAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      window.location.href = "/login";
+      navigate("/login");
       setIsDropdownOpen(false);
       toast.success("Logged out successfully!");
     } catch (error) {
