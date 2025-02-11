@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Home, Loader2, Menu, Settings } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
@@ -10,6 +10,8 @@ import withReactContent from "sweetalert2-react-content";
 import useAxiosPublic from "@/hooks/use-axios";
 import FileUpload from "@/modals/FileUpload";
 import FileCard from "@/components/customComponents/FileCard";
+import { AuthContext } from "../AuthContext";
+import { useRouter } from "next/navigation";
 
 interface FileType {
   uid: string;
@@ -27,34 +29,14 @@ const Dashboard: React.FC = () => {
   const [files, setFiles] = useState<FileType[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-
   const MySwal = withReactContent(Swal);
-
-  // const fetchFiles = () => {
-  //   useEffect(() => {
-  //     const fetchData = async () => {
-  //       try {
-  //         const response = await axiosPublic("/api/files");
-
-  //         if (!response) {
-  //           throw new Error("Failed to fetch files");
-  //         }
-  //         setFiles(response.data.files);
-  //       } catch (error) {
-  //         setError((error as Error).message);
-  //         console.error("Error fetching files:", error);
-  //       } finally {
-  //         setLoading(false);
-  //       }
-  //     };
-  //     console.log("fetched", files);
-  //     fetchData();
-  //   }, []);
-
-  //   return { files, error, loading };
-  // };
-
+  const { currentUser } = useContext(AuthContext);
+  const router = useRouter();
   useEffect(() => {
+    if (!currentUser) {
+      router.push("/login");
+      return;
+    }
     const fetchFiles = async () => {
       try {
         const response = await axiosPublic.get("/api/v1/drive/files");
@@ -89,20 +71,10 @@ const Dashboard: React.FC = () => {
     uid: string;
   }) => {
     try {
-      // const response = await axiosPublic.get("/api/get_file", {
-      //   params: { file_id: file.uid },
-      //   responseType: "blob",
-      // });
-
       const downloadLink =
         axiosPublic.defaults.baseURL +
         "/api/v1/drive/download?file_id=" +
         file.uid;
-
-      // const blob = new Blob([response.data]);
-
-      // const url = window.URL.createObjectURL(blob);
-
       const a = document.createElement("a");
       a.href = downloadLink;
       a.download = file.file_name;

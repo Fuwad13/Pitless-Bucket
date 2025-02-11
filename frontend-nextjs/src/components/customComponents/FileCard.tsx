@@ -84,7 +84,7 @@ const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
     <Card className="hover:shadow-lg transition-transform transform relative border border-gray-200">
       <CardHeader>
         <CardTitle className="flex items-center gap-3">
-          {FileIcon(file.extension)}
+          <FileIcon size={24} className="text-gray-500" />
           <span
             className="truncate min-h-8 overflow-hidden text-ellipsis whitespace-nowrap block max-w-[220px] md:max-w-[300px] lg:max-w-[400px]"
             title={file.file_name}
