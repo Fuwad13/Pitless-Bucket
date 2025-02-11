@@ -1,22 +1,24 @@
 "use client";
-import { AuthContext } from "../../auth/AuthContext";
+import { AuthContext } from "@/app/AuthContext";
 import React, { useContext, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { signOut } from "firebase/auth";
 import { getAuth } from "firebase/auth";
-import { LogOut } from "lucide-react";
+import { LogOut, Omega } from "lucide-react";
 import { toast } from "react-toastify";
 
 const Navbar: React.FC = () => {
   const { currentUser } = useContext(AuthContext);
   const auth = getAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate("/login");
+      router.push("/login");
       setIsDropdownOpen(false);
       toast.success("Logged out successfully!");
     } catch (error) {
@@ -29,7 +31,7 @@ const Navbar: React.FC = () => {
     <header className="bg-blue-600 text-white">
       <div className="flex justify-between items-center p-4">
         <Link
-          to="/dashboard"
+          href="/dashboard"
           className="ml-14 md:ml-0 text-2xl font-bold text-white"
         >
           Pitless Bucket
@@ -41,7 +43,7 @@ const Navbar: React.FC = () => {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="rounded-full w-10 h-10 cursor-pointer"
               >
-                <img
+                <
                   className="rounded-full w-10 h-10"
                   title={currentUser?.displayName || "user"}
                   src={
