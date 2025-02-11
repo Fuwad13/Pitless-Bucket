@@ -12,7 +12,7 @@ import {
   FileScan,
 } from "lucide-react";
 
-const FileIcon = (type: string) => {
+const FileExtensioIcon = (type: string) => {
   if (type === "folder") return <Folder className="text-blue-500" size={20} />;
 
   const extension = type.toLowerCase();
@@ -75,4 +75,4 @@ const FileIcon = (type: string) => {
   }
 };
 
-export default FileIcon;
+export default FileExtensioIcon;

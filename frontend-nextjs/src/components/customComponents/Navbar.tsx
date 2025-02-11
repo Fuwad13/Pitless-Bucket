@@ -43,7 +43,7 @@ const Navbar: React.FC = () => {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="rounded-full w-10 h-10 cursor-pointer"
               >
-                <
+                <img
                   className="rounded-full w-10 h-10"
                   title={currentUser?.displayName || "user"}
                   src={
