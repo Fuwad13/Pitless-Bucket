@@ -1,8 +1,17 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useContext, useEffect } from "react";
+import { AuthContext } from "./AuthContext";
 
 const Home = () => {
-  return ( 
+  const { currentUser } = useContext(AuthContext);
+  useEffect(() => {
+    if (currentUser) {
+      window.location.href = "/dashboard";
+    }
+  }, [currentUser]);
+  return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <div className="text-center space-y-6">
         <h1 className="text-5xl font-bold text-gray-900">
@@ -12,14 +21,14 @@ const Home = () => {
           Your private aggregate cloud storage platform.
         </p>
         <p className="text-lg text-gray-500">
-          Store, view and dowload you files with ease!
+          Store, view and download your files with ease!
         </p>
         <Button>
           <Link href="/signup">Try Pitless Bucket for Free</Link>
         </Button>
       </div>
     </div>
-   );
-}
- 
+  );
+};
+
 export default Home;

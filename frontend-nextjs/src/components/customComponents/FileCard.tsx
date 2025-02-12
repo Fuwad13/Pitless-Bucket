@@ -1,7 +1,13 @@
 "use client";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MoreVertical, Download, Trash2, Play, Image } from "lucide-react";
+import {
+  MoreVertical,
+  Trash2,
+  ImageIcon,
+  PlayIcon,
+  DownloadIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import FileExtensioIcon from "@/misc/FileExtensioIcon";
@@ -32,7 +38,7 @@ interface FileCardProps {
 const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
   const allowedVideoExtensions = ["mp4", "webm", "mkv"];
   const allowedImageExtensions = ["png", "jpg", "jpeg"];
-  const navigate = useRouter();
+  const router = useRouter();
   const [isDownloading, setIsDownloading] = useState(false);
 
   const fileNameWithoutExtension = file.file_name.includes(".")
@@ -112,30 +118,18 @@ const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
             {allowedVideoExtensions.includes(file.extension) && (
               <DropdownMenu.Item
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                onClick={() =>
-                  navigate.push("/video-stream", {
-                    state: {
-                      url: `http://localhost:8000/api/v1/drive/video-stream?file_id=${file.uid}`,
-                    },
-                  })
-                }
+                onClick={() => router.push(`/watch/${file.uid}`)}
               >
-                <Play size={16} className="text-gray-500" /> Play
+                <PlayIcon size={16} className="text-gray-500" /> Play Video
               </DropdownMenu.Item>
             )}
             {allowedImageExtensions.includes(file.extension) && (
               <DropdownMenu.Item
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                 // TODO: Implement image preview
-                onClick={() =>
-                  navigate.push("/image-preview", {
-                    state: {
-                      url: `http://localhost:8000/api/v1/drive/image-preview?file_id=${file.uid}`,
-                    },
-                  })
-                }
+                onClick={() => router.push(`/image-preview/${file.uid}`)}
               >
-                <Image size={16} className="text-gray-500" /> View Image
+                <ImageIcon size={16} className="text-gray-500" /> View Image
               </DropdownMenu.Item>
             )}
             <DropdownMenu.Item
@@ -143,7 +137,7 @@ const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
               onClick={() => handleDownload(file)}
               disabled={isDownloading}
             >
-              <Download size={16} className="text-gray-500" /> Download
+              <DownloadIcon size={16} className="text-gray-500" /> Download
             </DropdownMenu.Item>
             <DropdownMenu.Item
               className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 cursor-pointer"

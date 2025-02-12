@@ -1,12 +1,20 @@
 "use client";
-import React from "react";
 import ReactPlayer from "react-player";
-import { useLocation } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import { useContext } from "react";
+import { AuthContext } from "@/app/AuthContext";
+import UnauthorizedPage from "@/components/customComponents/unauthorisedPage";
 
-const VideoStreamPage: React.FC = () => {
-  const location = useLocation();
-  const { url } = location.state as { url: string };
-  console.log(url);
+interface VideoPlayerProps {
+  videoUrl: string;
+}
+
+const VideoPlayer = ({ videoUrl }: VideoPlayerProps) => {
+  const { currentUser } = useContext(AuthContext);
+  if (!currentUser) {
+    return <UnauthorizedPage />;
+  }
+  // TODO : check if user has access to the video
   return (
     <div className="flex min-h-screen">
       <aside className="hidden md:flex flex-col w-64 bg-blue-50 p-6 space-y-4 shadow-lg">
@@ -18,7 +26,7 @@ const VideoStreamPage: React.FC = () => {
           <div className="player-wrapper">
             <ReactPlayer
               className="react-player"
-              url={url}
+              url={videoUrl}
               width="100%"
               height="100%"
               controls={true}
@@ -30,4 +38,4 @@ const VideoStreamPage: React.FC = () => {
   );
 };
 
-export default VideoStreamPage;
+export default VideoPlayer;
