@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Upload, Folder, File, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "react-toastify";
 import {
   Dialog,
@@ -29,6 +30,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const axiosPublic = useAxiosPublic();
 
@@ -95,6 +97,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
           headers: {
             "Content-Type": "multipart/form-data",
           },
+          onUploadProgress: (progressEvent) => {
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / (progressEvent.total || 1)
+            );
+            setUploadProgress(percent);
+          },
         }
       );
 
@@ -150,7 +158,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
           <Upload size={20} /> Upload
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md max-w-[90vw]">
+      <DialogContent className="w-[400px] h-[400px]">
         <DialogHeader>
           <DialogTitle>Upload Files or Folders</DialogTitle>
         </DialogHeader>
@@ -235,6 +243,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
               ))}
             </div>
           )}
+          <Progress value={uploadProgress} />
 
           {!loading ? (
             <Button onClick={handleUpload} className="w-full">
