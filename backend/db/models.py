@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 import uuid
 from sqlalchemy.dialects.postgresql import UUID, JSON, TIMESTAMP, BIGINT
-from sqlmodel import Field, Relationship, SQLModel, Column
+from sqlmodel import Field, Relationship, SQLModel, Column, String
 
 # --------------------------
 # User Model
@@ -25,7 +25,7 @@ class User(SQLModel, table=True):
     created_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
 
-    drives: List["GoogleDrive"] = Relationship(
+    storage_providers: List["StorageProvider"] = Relationship(
         back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"}
     )
     files: List["FileInfo"] = Relationship(
@@ -37,12 +37,12 @@ class User(SQLModel, table=True):
 
 
 # --------------------------
-# GoogleDrive Model
+# StorageProvider Model
 # --------------------------
 
 
-class GoogleDrive(SQLModel, table=True):
-    __tablename__ = "google_drive"
+class StorageProvider(SQLModel, table=True):
+    __tablename__ = "storage_provider"
 
     uid: uuid.UUID = Field(
         sa_column=Column(
@@ -53,16 +53,16 @@ class GoogleDrive(SQLModel, table=True):
         )
     )
     user_id: uuid.UUID = Field(foreign_key="user.uid")
-    email: str = Field(index=True, sa_column_kwargs={"unique": True})
+    provider_name: str = Field(sa_column=Column(String))
     creds: dict = Field(sa_column=Column(JSON))
     used_space: int = Field(sa_column=Column(BIGINT), default=0)
     available_space: int = Field(sa_column=Column(BIGINT), default=0)
 
-    user: "User" = Relationship(back_populates="drives")
+    user: "User" = Relationship(back_populates="storage_providers")
 
     def __repr__(self):
         return (
-            f"<GoogleDrive(user_id={self.user_id}, email={self.email}, "
+            f"<StorageProvider(user_id={self.user_id}, provider_name={self.provider_name}, "
             f"used_space={self.used_space}, total_space={self.total_space})>"
         )
 

@@ -4,10 +4,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.db.main import init_db
+from backend.log.logger import get_logger
 from backend.auth.router import auth_router
 from backend.drive.router import drive_router
-from backend.log.logger import get_logger
-from backend.db.main import init_db
+from backend.file_manager.router import fm_router
 
 logger = get_logger(__name__, Path(__file__).parent / "log" / "app.log")
 
@@ -42,3 +43,6 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix=f"/api/{version}/auth", tags=["auth"])
 app.include_router(drive_router, prefix=f"/api/{version}/drive", tags=["drive"])
+# app.include_router(
+#     fm_router, prefix=f"/api/{version}/file_manager", tags=["file_manager"]
+# )
