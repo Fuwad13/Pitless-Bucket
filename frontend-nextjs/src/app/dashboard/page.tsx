@@ -230,6 +230,7 @@ const Dashboard: React.FC = () => {
                 file={file}
                 onDownload={handleDownload}
                 onDelete={handleDelete}
+                refreshFiles={refreshFiles}
               />
             ))
           )}

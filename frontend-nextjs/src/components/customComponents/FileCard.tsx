@@ -7,10 +7,12 @@ import {
   ImageIcon,
   PlayIcon,
   DownloadIcon,
+  FolderPen,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import FileExtensioIcon from "@/misc/FileExtensioIcon";
+import RenameModal from "@/modals/RenameModal";
 
 interface FileCardProps {
   file: {
@@ -33,13 +35,20 @@ interface FileCardProps {
     extension: string;
     uid: string;
   }) => Promise<void>;
+  refreshFiles: () => void;
 }
 
-const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
+const FileCard: React.FC<FileCardProps> = ({
+  file,
+  onDownload,
+  onDelete,
+  refreshFiles,
+}) => {
   const allowedVideoExtensions = ["mp4", "webm", "mkv"];
   const allowedImageExtensions = ["png", "jpg", "jpeg"];
   const router = useRouter();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
 
   const fileNameWithoutExtension = file.file_name.includes(".")
     ? file.file_name.substring(0, file.file_name.lastIndexOf("."))
@@ -59,6 +68,7 @@ const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
       setIsDownloading(false);
     }
   };
+
   const handleDelete = async (file: {
     file_name: string;
     extension: string;
@@ -67,9 +77,10 @@ const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
     try {
       await onDelete(file);
     } catch (error) {
-      console.error("Download error:", error);
+      console.error("Delete error:", error);
     }
   };
+
   const formatFileSize = (size: number): string => {
     if (size === 0) return "0 Bytes";
 
@@ -140,6 +151,12 @@ const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
               <DownloadIcon size={16} className="text-gray-500" /> Download
             </DropdownMenu.Item>
             <DropdownMenu.Item
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+              onClick={() => setIsRenameModalOpen(true)}
+            >
+              <FolderPen size={16} className="text-gray-500" /> Rename
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
               className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 cursor-pointer"
               onClick={() => handleDelete(file)}
             >
@@ -148,6 +165,14 @@ const FileCard: React.FC<FileCardProps> = ({ file, onDownload, onDelete }) => {
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
+
+      {/* Rename Modal */}
+      <RenameModal
+        file={file}
+        isOpen={isRenameModalOpen}
+        onClose={() => setIsRenameModalOpen(false)}
+        refreshFiles={refreshFiles}
+      />
 
       {/* Downloading Progress Bar */}
       {isDownloading && (

@@ -281,7 +281,7 @@ async def download_file(file_id: str, session: AsyncSession = Depends(get_sessio
     )
 
 
-@drive_router.put("/reanme", status_code=status.HTTP_200_OK)
+@drive_router.put("/rename", status_code=status.HTTP_200_OK)
 async def rename_file(
     file_id: str, new_name: str, session: AsyncSession = Depends(get_session)
 ):
