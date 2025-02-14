@@ -7,7 +7,7 @@ from typing import List, Tuple
 from googleapiclient.discovery import build, Resource
 from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaFileUpload
-from backend.db.models import FileInfo, FileChunk, GoogleDrive, User
+from backend.db.models import FileInfo, FileChunk, StorageProvider, User
 from backend.drive.schemas import FileInfoModel, FileChunkModel, GoogleDriveModel
 from backend.auth.schemas import UserModel
 from sqlmodel.ext.asyncio.session import AsyncSession

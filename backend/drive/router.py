@@ -19,7 +19,7 @@ from sqlmodel import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from backend.db.main import get_session
-from backend.db.models import FileInfo, FileChunk, GoogleDrive, User
+from backend.db.models import FileInfo, FileChunk, StorageProvider, User
 from .schemas import FileInfoModel, FileChunkModel, GoogleDriveModel
 from backend.log.logger import get_logger
 from .service import DriveService

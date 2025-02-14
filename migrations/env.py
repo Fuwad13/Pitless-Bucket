@@ -6,7 +6,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-from backend.db.models import User, GoogleDrive, FileInfo, FileChunk
+from backend.db.models import User, StorageProvider, FileInfo, FileChunk
 from sqlmodel import SQLModel
 from backend.config import Config
 
