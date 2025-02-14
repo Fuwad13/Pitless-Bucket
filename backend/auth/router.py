@@ -13,7 +13,8 @@ from sqlmodel import select, update
 from backend.log.logger import get_logger
 from backend.db.main import get_session
 from backend.config import Config
-from backend.db.models import User, GoogleDrive
+from backend.db.models import User, StorageProvider
+from .dependencies import get_current_user
 
 logger = get_logger(
     __name__,
@@ -23,7 +24,7 @@ logger = get_logger(
 
 auth_router = APIRouter()
 
-SCOPES = [
+GOOGLE_DRIVE_SCOPES = [
     "openid",
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/userinfo.profile",
@@ -45,7 +46,7 @@ CLIENT_SECRETS_WEB = {
 
 flow = Flow.from_client_config(
     CLIENT_SECRETS_WEB,
-    scopes=SCOPES,
+    scopes=GOOGLE_DRIVE_SCOPES,
     redirect_uri="http://localhost:8000/api/v1/auth/google/callback",
     autogenerate_code_verifier=True,
     code_verifier=None,
@@ -62,7 +63,7 @@ def auth_google() -> dict:
 
 
 @auth_router.get("/google/callback", status_code=status.HTTP_200_OK)
-async def auth_callback(
+async def auth_google_callback(
     code: str, session: AsyncSession = Depends(get_session)
 ) -> dict:
     """Callback URL for Google OAuth2 authorization"""

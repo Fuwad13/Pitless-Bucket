@@ -4,6 +4,7 @@ import os
 from typing import Dict, List, Tuple
 import uuid
 import tempfile
+from pathlib import Path
 
 import aiofiles
 from fastapi import HTTPException, UploadFile
@@ -48,13 +49,19 @@ class MetaDataManagerService:
 fixed_size_chunk_strategy = FixedSizeChunkStrategy()
 metadata_manager_service = MetaDataManagerService()
 
+CHUNK_SIZE = 1024 * 1024 * 5
+
 
 class FileManagerService:
-
     def upload_file(self, session: AsyncSession, file: UploadFile, user_id: str):
         try:
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                content = file.file.read()
+                while True:
+                    chunk = file.file.read(CHUNK_SIZE)
+                    if not chunk:
+                        break
+                    temp_file.write(chunk)
+
                 temp_file_path = temp_file.name
 
             # TODO : implement chunk strategy selection here later
@@ -178,5 +185,10 @@ class FileManagerService:
 
     async def move_folder(
         self, session: AsyncSession, folder_id: str, user_id: str, new_folder_id: str
+    ):
+        pass
+
+    async def add_new_storage_provider(
+        self, session: AsyncSession, provider_name: str, credentials: Dict, user_id: str
     ):
         pass

@@ -7,6 +7,7 @@ interface AuthContextType {
   currentUser: User | null;
   setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
   loading: boolean;
+  getIdToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -28,8 +29,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  const getIdToken = async () => {
+    if (currentUser) {
+      return await currentUser.getIdToken();
+    }
+    return null;
+  };
+
   return (
-    <AuthContext.Provider value={{ currentUser, setCurrentUser, loading }}>
+    <AuthContext.Provider
+      value={{ currentUser, setCurrentUser, loading, getIdToken }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );
