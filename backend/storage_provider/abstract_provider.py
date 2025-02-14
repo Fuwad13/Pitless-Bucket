@@ -3,6 +3,10 @@ from typing import Dict
 
 
 class AbstractStorageProvider(ABC):
+
+    def __init__(self, credentials: Dict):
+        self.credentials = credentials
+
     @abstractmethod
     def authenticate(self, credentials: Dict):
         pass

@@ -33,7 +33,7 @@ class User(SQLModel, table=True):
     )
 
     def __repr__(self):
-        return f"<User(id={self.uid}, name={self.name}, email={self.email}, created_at={self.created_at})>"
+        return f"<User(id={self.uid}, display_name={self.display_name}, username={self.username}, email={self.email}, created_at={self.created_at})>"
 
 
 # --------------------------
@@ -59,11 +59,15 @@ class StorageProvider(SQLModel, table=True):
     available_space: int = Field(sa_column=Column(BIGINT), default=0)
 
     user: "User" = Relationship(back_populates="storage_providers")
+    chunks: List["FileChunk"] = Relationship(
+        back_populates="provider",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
     def __repr__(self):
         return (
             f"<StorageProvider(user_id={self.user_id}, provider_name={self.provider_name}, "
-            f"used_space={self.used_space}, total_space={self.total_space})>"
+            f"used_space={self.used_space}, available_space={self.available_space})>"
         )
 
 
@@ -116,10 +120,11 @@ class FileChunk(SQLModel, table=True):
     file_id: uuid.UUID = Field(index=True, foreign_key="file_info.uid")
     chunk_name: str
     chunk_number: int
-    drive_file_id: str
-    drive_account: str
+    provider_file_id: str
+    provider_id: uuid.UUID = Field(foreign_key="storage_provider.uid")
     size: int = Field(sa_column=Column(BIGINT))
     created_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
 
     file: "FileInfo" = Relationship(back_populates="chunks")
+    provider: "StorageProvider" = Relationship(back_populates="chunks")

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 
-class ChunkStrategyBase(ABC):
+class AbstractChunkStrategy(ABC):
     @abstractmethod
     def split_file(self, input_file_path: str, chunk_size: int) -> List[str]:
         pass
@@ -12,7 +12,7 @@ class ChunkStrategyBase(ABC):
         pass
 
 
-class FixedSizeChunkStrategy(ChunkStrategyBase):
+class FixedSizeChunkStrategy(AbstractChunkStrategy):
     def split_file(
         self, input_file_path: str, chunk_size: int = 100 * 1024 * 1024
     ) -> List[str]:

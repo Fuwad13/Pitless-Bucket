@@ -1,15 +1,21 @@
 import asyncio
+import json
 import os
-from typing import List
+from typing import Dict, List, Tuple
 import uuid
 import tempfile
 
 import aiofiles
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
-from backend.chunk_strategy.fixed_size_chunk_strategy import FixedSizeChunkStrategy
-from backend.db.models import StorageProvider
+from backend.chunk_strategy.strategy import FixedSizeChunkStrategy
+from backend.db.models import FileChunk, FileInfo, StorageProvider
+from backend.storage_provider.abstract_provider import AbstractStorageProvider
+from backend.log.logger import get_logger
+from backend.storage_provider.factory import get_provider
+
+logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
 
 
 class MetaDataManagerService:
@@ -55,85 +61,71 @@ class FileManagerService:
             # get the info of the user's linked storage providers
             # select a chunk distribution strategy based on the user's avaiable storage or filetype etc.
 
-            chunk_strat = fixed_size_chunk_strategy  # TODO :  use Abstract Factory pattern to select chunk strategy
+            chunk_strat = fixed_size_chunk_strategy  # TODO :  use Strategy pattern to select chunk strategy
             chunk_paths = chunk_strat.split_file(temp_file_path)
             uploaded_chunks = []
             stmt = select(StorageProvider).where(
                 StorageProvider.user_id == uuid.UUID(user_id)
             )
-            result = asyncio.run(session.exec(stmt))
-            accounts = []
-            for storage_provider in result:
-                #  get the storage provider service
-                storage_provider_service, _ = await drive_service.async_get_api_service(
-                    "drive", "v3", drive.creds
+            results = asyncio.run(session.exec(stmt))
+            storage_providers: List[Tuple[str, AbstractStorageProvider]] = []
+            for res in results:
+                storage_provider = get_provider(
+                    res.provider_name, credentials=json.loads(res.creds)
                 )
-                accounts.append(
-                    {
-                        "account": mail_addr,
-                        "creds": drive.creds,
-                        "drive_service": gdrive_service,
-                    }
-                )
+                storage_providers.append((str(res.uid), storage_provider))
 
-            current_account_idx = 0
             for idx, chunk_path in enumerate(chunk_paths):
-                account = accounts[current_account_idx % len(accounts)]
-                # TODO : handle this in a better way
-                # Refresh token if needed
-                # if not creds.valid:
-                #     creds.refresh(Request())
 
-                # Upload chunk
                 chunk_name = f"{file.filename}.part{idx+1:03d}"
                 file_metadata = {"name": chunk_name}
-                media = MediaFileUpload(chunk_path, mimetype="application/octet-stream")
+                # TODO : implement a strategy to select the storage provider
+                storage_provider_id, storage_provider = storage_providers[
+                    idx % len(storage_providers)
+                ]  # round robin
 
-                drive_file = await drive_service.async_upload_file(
-                    account["drive_service"], media, "id, size", body=file_metadata
-                )
+                storage_provider.upload_chunk(chunk_path, file_metadata)
                 uploaded_chunks.append(
                     {
                         "original_filename": file.filename,
                         "chunk_number": idx + 1,
                         "chunk_name": chunk_name,
-                        "drive_account": account["account"],
-                        "drive_file_id": drive_file["id"],
-                        "size": int(drive_file["size"]),
+                        "storage_provider": storage_provider.__class__.__name__,
+                        "prodiver_file_id": "TODO",
+                        "provider_id": storage_provider_id,
+                        "size": os.path.getsize(chunk_path),
                     }
                 )
-                media._fd.close()
-                current_account_idx += 1
 
-            # TODO : currently hardcoded user_id
             file_extension = (
                 file.filename.split(".")[-1] if "." in file.filename else "unknown"
             )
             file_ = FileInfo(
-                user_id=test_user_id,
+                user_id=uuid.UUID(user_id),
                 file_name=file.filename,
                 content_type=file.content_type,
                 extension=file_extension,
                 size=file.size,
             )
             session.add(file_)
-            await session.commit()
-            await session.refresh(file_)
+            asyncio.run(session.commit())
+            asyncio.run(session.refresh(file_))
             for chunk in uploaded_chunks:
                 chunk_to_add = FileChunk(
                     file_id=file_.uid,
                     chunk_name=chunk["chunk_name"],
                     chunk_number=chunk["chunk_number"],
-                    drive_file_id=chunk["drive_file_id"],
-                    drive_account=chunk["drive_account"],
+                    provider_file_id=chunk["provider_file_id"],
+                    provider_id=uuid.UUID(chunk["provider_id"]),
                     size=chunk["size"],
                 )
                 session.add(chunk_to_add)
-            await session.commit()
+            asyncio.run(session.commit())
 
-            await asyncio.to_thread(os.remove, temp_file_path)
+            os.remove(temp_file_path)
+
             for chunk_path in chunk_paths:
-                await asyncio.to_thread(os.remove, chunk_path)
+                os.remove(chunk_path)
 
             return {
                 "message": "File uploaded successfully",
@@ -145,11 +137,11 @@ class FileManagerService:
         except Exception as e:
             logger.error(f"Error in upload_file: {e}")
             if "temp_file_path" in locals() and os.path.exists(temp_file_path):
-                await asyncio.to_thread(os.remove, temp_file_path)
+                os.remove(temp_file_path)
             if "chunk_paths" in locals():
                 for chunk_path in chunk_paths:
                     if os.path.exists(chunk_path):
-                        await asyncio.to_thread(os.remove, chunk_path)
+                        os.remove(chunk_path)
             raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
     async def download_file(self, session: AsyncSession, file_id: str, user_id: str):
