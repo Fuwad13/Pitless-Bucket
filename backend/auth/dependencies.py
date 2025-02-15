@@ -42,7 +42,5 @@ class FirebaseTokenBearer(HTTPBearer):
 async def get_current_user(token_data: dict = Depends(FirebaseTokenBearer())) -> dict:
     """
     Dependency that returns the decoded Firebase token.
-    You can extend this to fetch additional user data from your database if needed.
     """
-    print(token_data)
     return token_data

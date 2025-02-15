@@ -19,6 +19,7 @@ class User(SQLModel, table=True):
             default=uuid.uuid4,
         )
     )
+    firebase_uid: str = Field(index=True, sa_column_kwargs={"unique": True})
     display_name: str
     username: str
     email: str = Field(index=True, sa_column_kwargs={"unique": True})
@@ -26,10 +27,12 @@ class User(SQLModel, table=True):
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
 
     storage_providers: List["StorageProvider"] = Relationship(
-        back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+        back_populates="firebase_user",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
     files: List["FileInfo"] = Relationship(
-        back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+        back_populates="firebase_user",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
 
     def __repr__(self):
@@ -52,13 +55,14 @@ class StorageProvider(SQLModel, table=True):
             default=uuid.uuid4,
         )
     )
-    user_id: uuid.UUID = Field(foreign_key="user.uid")
+    firebase_uid: str = Field(foreign_key="user.firebase_uid", index=True)
     provider_name: str = Field(sa_column=Column(String))
+    email: str = Field(index=True, sa_column_kwargs={"unique": True})
     creds: dict = Field(sa_column=Column(JSON))
     used_space: int = Field(sa_column=Column(BIGINT), default=0)
     available_space: int = Field(sa_column=Column(BIGINT), default=0)
 
-    user: "User" = Relationship(back_populates="storage_providers")
+    firebase_user: "User" = Relationship(back_populates="storage_providers")
     chunks: List["FileChunk"] = Relationship(
         back_populates="provider",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
@@ -87,7 +91,7 @@ class FileInfo(SQLModel, table=True):
             default=uuid.uuid4,
         )
     )
-    user_id: uuid.UUID = Field(foreign_key="user.uid", index=True)
+    firebase_uid: str = Field(foreign_key="user.firebase_uid", index=True)
     file_name: str
     content_type: str = Field(default="unknown_type")
     extension: str = Field(default="unknown_ext")
@@ -95,7 +99,7 @@ class FileInfo(SQLModel, table=True):
     created_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
 
-    user: "User" = Relationship(back_populates="files")
+    firebase_user: "User" = Relationship(back_populates="files")
     chunks: List["FileChunk"] = Relationship(
         back_populates="file", sa_relationship_kwargs={"cascade": "all, delete-orphan"}
     )

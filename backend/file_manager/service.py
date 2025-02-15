@@ -142,6 +142,7 @@ class FileManagerService:
             }
 
         except Exception as e:
+            asyncio.run(session.rollback())
             logger.error(f"Error in upload_file: {e}")
             if "temp_file_path" in locals() and os.path.exists(temp_file_path):
                 os.remove(temp_file_path)

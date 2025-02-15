@@ -18,12 +18,16 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { AuthContext } from "@/app/AuthContext";
 import { useRouter } from "next/navigation";
+import useAxiosPublic from "@/hooks/use-axios";
+import { headers } from "next/headers";
+import { auth } from "../firebase";
 
 const SettingsPage: React.FC = () => {
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser, getIdToken } = useContext(AuthContext);
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(false);
   const MySwal = withReactContent(Swal);
+  const axiosPublic = useAxiosPublic();
 
   useEffect(() => {
     if (!currentUser) {
@@ -31,17 +35,43 @@ const SettingsPage: React.FC = () => {
     }
   }, [currentUser, router]);
 
-  const handleConnectGoogleDrive = () => {
-    toast.success("Google Drive connected successfully!", {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "dark",
-    });
+  const handleConnectGoogleDrive = async () => {
+    const token = await getIdToken();
+
+    try {
+      const response = await axiosPublic.get("api/v1/auth/google", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const google_auth_url = response.data["google_auth_url"];
+      window.open(
+        google_auth_url,
+        "GoogleAuth",
+        "width=500,height=600,scrollbars=yes"
+      );
+
+      // toast.success("Google Drive connected successfully!", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      //   hideProgressBar: false,
+      //   closeOnClick: false,
+      //   pauseOnHover: true,
+      //   draggable: true,
+      //   progress: undefined,
+      //   theme: "dark",
+      // });
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to connect Google Drive", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+    }
   };
 
   const handleConnectOneDrive = () => {

@@ -16,14 +16,16 @@ import {
   GoogleAuthProvider,
 } from "../firebase.js";
 import { onAuthStateChanged } from "firebase/auth";
+import useAxiosPublic from "@/hooks/use-axios";
 
 const SignUpPage = () => {
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const axiosPublic = useAxiosPublic();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -40,7 +42,7 @@ const SignUpPage = () => {
     try {
       const userInfo = await createUserWithEmailAndPassword(
         auth,
-        email,
+        emailAddress,
         password
       );
       await updateProfile(userInfo.user, {
@@ -48,7 +50,15 @@ const SignUpPage = () => {
         photoURL:
           "https://cdn.pixabay.com/photo/2018/11/13/21/43/avatar-3814049_1280.png",
       });
-      toast.success("Signup Successful!");
+      const { uid, email } = userInfo.user;
+      const response = await axiosPublic.post("/api/v1/auth/register_user", {
+        firebase_uid: uid,
+        display_name: name,
+        username: name,
+        email: email,
+      });
+      console.log(response.data);
+      toast.success("Welcome to Pitless Bucket!");
       router.push("/dashboard");
     } catch (error) {
       toast.error("Error creating account.");
@@ -60,8 +70,16 @@ const SignUpPage = () => {
   const handleGoogleSignup = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      toast.success("Welcome!");
+      const userInfo = await signInWithPopup(auth, provider);
+      const { uid, displayName, email } = userInfo.user;
+      const response = await axiosPublic.post("/api/v1/auth/register_user", {
+        firebase_uid: uid,
+        display_name: displayName,
+        username: displayName,
+        email: email,
+      });
+      console.log(response.data);
+      toast.success("Welcome to Pitless Bucket!");
       router.push("/dashboard");
     } catch (error) {
       toast.error("Google signup failed.");
@@ -92,8 +110,8 @@ const SignUpPage = () => {
               id="email"
               type="email"
               placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={emailAddress}
+              onChange={(e) => setEmailAddress(e.target.value)}
               required
             />
           </div>
