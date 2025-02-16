@@ -4,15 +4,6 @@ from uuid import UUID
 from datetime import datetime
 
 
-class GoogleDriveModel(BaseModel):
-    uid: UUID
-    user_id: UUID
-    email: str
-    creds: dict
-    used_space: int
-    available_space: int
-
-
 class FileInfoModel(BaseModel):
     uid: UUID
     user_id: UUID
@@ -22,6 +13,15 @@ class FileInfoModel(BaseModel):
     size: int
     created_at: datetime
     updated_at: datetime
+
+
+class GoogleDriveModel(BaseModel):
+    uid: UUID
+    user_id: UUID
+    email: str
+    creds: dict
+    used_space: int
+    available_space: int
 
 
 class FileChunkModel(BaseModel):

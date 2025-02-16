@@ -3,6 +3,10 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 from backend.config import Config
+from pathlib import Path
+from backend.log.logger import get_logger
+
+logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
 
 FIREBASE_CLIENT_CREDS = {
     "type": "service_account",

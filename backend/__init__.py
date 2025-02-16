@@ -46,6 +46,6 @@ app.include_router(auth_router, prefix=f"/api/{version}/auth", tags=["auth"])
 app.include_router(
     drive_router, prefix=f"/api/{version}/drive", tags=["drive", "deprecated"]
 )
-# app.include_router(
-#     fm_router, prefix=f"/api/{version}/file_manager", tags=["file_manager"]
-# )
+app.include_router(
+    fm_router, prefix=f"/api/{version}/file_manager", tags=["file_manager"]
+)

@@ -1,5 +1,11 @@
 "use client";
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useContext,
+} from "react";
 import { Upload, Folder, File, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -19,6 +25,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import useAxiosPublic from "../hooks/AxiosPublic";
+import { AuthContext } from "@/app/AuthContext";
 
 interface FileUploadProps {
   refreshFiles: () => void;
@@ -33,6 +40,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const axiosPublic = useAxiosPublic();
+  const { getIdToken } = useContext(AuthContext);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -90,12 +98,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
 
     try {
       setLoading(true);
+      const token = await getIdToken();
       const response = await axiosPublic.post(
-        "/api/v1/drive/upload",
+        "/api/v1/file_manager/upload_file",
         formData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
           },
           onUploadProgress: (progressEvent) => {
             const percent = Math.round(
@@ -105,7 +115,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
           },
         }
       );
-
+      console.log(response);
       if (!response) {
         throw new Error("Upload failed");
       }

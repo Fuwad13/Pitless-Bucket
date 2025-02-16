@@ -1,13 +1,34 @@
+from pathlib import Path
 from backend.storage_provider.abstract_provider import AbstractStorageProvider
+from googleapiclient.discovery import build, Resource
+from google.oauth2.credentials import Credentials
+from googleapiclient.http import MediaFileUpload
+from backend.log.logger import get_logger
+
+logger = get_logger(__name__, Path(__file__).parent.parent.parent / "log" / "app.log")
 
 
 class GoogleDriveProvider(AbstractStorageProvider):
 
-    def authenticate(self, credentials):
-        pass
+    def __init__(self, credentials):
+        super().__init__(credentials)
+        self.drive_service: Resource = self.authenticate(credentials)
+
+    def authenticate(self, credentials) -> Resource:
+        creds = Credentials.from_authorized_user_info(credentials)
+        return build("drive", "v3", credentials=creds)
 
     def upload_chunk(self, file_path, file_name):
-        pass
+        media = MediaFileUpload(
+            file_path, mimetype="application/octet-stream", resumable=True
+        )
+        drive_file = (
+            self.drive_service.files()
+            .create(media_body=media, fields="id", body={"name": file_name})
+            .execute()
+        )
+        logger.debug(f"Uploaded chunk: {file_name} -> drive id: {drive_file['id']}")
+        return drive_file["id"]
 
     def download_chunk(self, file_path):
         pass

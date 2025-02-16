@@ -12,6 +12,7 @@ import FileUpload from "@/modals/FileUpload";
 import FileCard from "@/components/customComponents/FileCard";
 import { AuthContext } from "@/app/AuthContext";
 import { useRouter } from "next/navigation";
+import { get } from "http";
 
 interface FileType {
   uid: string;
@@ -30,7 +31,7 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const MySwal = withReactContent(Swal);
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser, getIdToken } = useContext(AuthContext);
   const router = useRouter();
   useEffect(() => {
     if (!currentUser) {
@@ -39,7 +40,11 @@ const Dashboard: React.FC = () => {
     }
     const fetchFiles = async () => {
       try {
-        const response = await axiosPublic.get("/api/v1/drive/files");
+        const token = await getIdToken();
+        const response = await axiosPublic.get(
+          "/api/v1/file_manager/list_files",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         if (!response) {
           throw new Error("Failed to fetch files");
         }
@@ -53,11 +58,15 @@ const Dashboard: React.FC = () => {
     };
 
     fetchFiles();
-  }, [router, currentUser, axiosPublic]);
+  }, [router, currentUser, axiosPublic, getIdToken]);
 
   const refreshFiles = async () => {
     try {
-      const response = await axiosPublic.get("/api/v1/drive/files");
+      const token = await getIdToken();
+      const response = await axiosPublic.get(
+        "/api/v1/file_manager/list_files",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setFiles(response.data);
     } catch (error) {
       setError((error as Error).message);
