@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import time
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -164,22 +165,21 @@ async def auth_dropbox_callback(
             "redirect_uri": "http://localhost:8000/api/v1/auth/dropbox/callback",
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        response = httpx.post(token_url, data=data, headers=headers)
+        async with httpx.AsyncClient() as client:
+            response = await client.post(token_url, data=data, headers=headers)
         token_data = response.json()
 
         if "access_token" not in token_data:
             raise HTTPException(status_code=400, detail="Failed to obtain access token")
 
         access_token = token_data["access_token"]
-        refresh_token = token_data.get(
-            "refresh_token"
-        )  # Refresh token is returned only if offline access was requested
-        expires_in = token_data["expires_in"]
+        refresh_token = token_data.get("refresh_token")
+        expires_in = int(time.time()) + token_data["expires_in"]
 
-        # Fetch Dropbox account details
         user_info_url = "https://api.dropboxapi.com/2/users/get_current_account"
         headers = {"Authorization": f"Bearer {access_token}"}
-        user_info_response = httpx.post(user_info_url, headers=headers)
+        async with httpx.AsyncClient() as client:
+            user_info_response = await client.post(user_info_url, headers=headers)
         user_info = user_info_response.json()
 
         existing_drive = (
