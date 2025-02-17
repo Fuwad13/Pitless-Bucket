@@ -136,8 +136,10 @@ const Dashboard: React.FC = () => {
 
     if (result.isConfirmed) {
       try {
-        await axiosPublic.delete("/api/v1/drive/delete_file", {
+        const token = await getIdToken();
+        await axiosPublic.delete("/api/v1/file_manager/delete_file", {
           params: { file_id: file.uid },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         setFiles((prevFiles) => prevFiles.filter((f) => f.uid !== file.uid));

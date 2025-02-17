@@ -30,11 +30,11 @@ class GoogleDriveProvider(AbstractStorageProvider):
         logger.debug(f"Uploaded chunk: {file_name} -> drive id: {drive_file['id']}")
         return drive_file["id"]
 
-    def download_chunk(self, file_path):
+    def download_chunk(self, file_id):
         pass
 
-    def delete_chunk(self, file_path):
-        pass
+    def delete_chunk(self, file_id):
+        self.drive_service.files().delete(fileId=file_id).execute()
 
     def get_stats(self):
         pass

@@ -20,7 +20,7 @@ class AbstractStorageProvider(ABC):
         pass
 
     @abstractmethod
-    def delete_chunk(self, file_path: str) -> None:
+    def delete_chunk(self):
         pass
 
     @abstractmethod

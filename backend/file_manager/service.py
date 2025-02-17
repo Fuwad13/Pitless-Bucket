@@ -172,8 +172,36 @@ class FileManagerService:
     async def download_file(self, session: AsyncSession, file_id: str, user_id: str):
         pass
 
-    async def delete_file(self, session: AsyncSession, file_id: str, user_id: str):
-        pass
+    async def delete_file(self, session: AsyncSession, file_id: str, firebase_uid: str):
+        """Delete a file uploaded by User"""
+        try:
+            stmt = select(FileInfo).where(FileInfo.uid == file_id)
+            result = (await session.exec(stmt)).first()
+            if not result:
+                raise HTTPException(status_code=404, detail="File not found")
+            if result.firebase_uid != firebase_uid:
+                raise HTTPException(status_code=403, detail="Unauthorized")
+
+            stmt = select(FileChunk).where(FileChunk.file_id == file_id)
+            chunks = await session.exec(stmt)
+
+            for chunk in chunks:
+                stmt = select(StorageProvider).where(
+                    StorageProvider.uid == chunk.provider_id
+                )
+                res_sp = (await session.exec(stmt)).first()
+                provider = get_provider(
+                    res_sp.provider_name,
+                    credentials=json.loads(res_sp.creds),
+                )
+                await asyncio.to_thread(provider.delete_chunk, chunk.provider_file_id)
+            await session.delete(result)
+            await session.commit()
+
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Error in delete_file: {e}")
+            raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
 
     async def rename_file(
         self, session: AsyncSession, file_id: str, user_id: str, new_name: str

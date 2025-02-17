@@ -39,3 +39,14 @@ async def list_files(
     """List all files uploaded by User"""
     logger.debug(f"Current User: {current_user}")
     return await fm_service.list_files(session, current_user.get("uid"))
+
+
+@fm_router.delete("/delete_file")
+async def delete_file(
+    file_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Delete a file uploaded by User"""
+    logger.debug(f"Current User: {current_user}")
+    return await fm_service.delete_file(session, file_id, current_user.get("uid"))
