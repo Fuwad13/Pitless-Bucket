@@ -8,6 +8,7 @@ from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
+import httpx
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, update
 
@@ -127,4 +128,100 @@ async def auth_google_callback(
         logger.error(f"Error in auth_callback: {e}")
         raise HTTPException(
             status_code=400, detail="Something went wrong, please try again"
+        )
+
+
+@auth_router.get("/dropbox")
+def auth_dropbox(current_user: dict = Depends(get_current_user)) -> dict:
+    """Returns the Dropbox OAuth2 authorization URL"""
+    state = json.dumps({"user_id": str(current_user.get("uid"))})
+    dropbox_auth_url = (
+        f"https://www.dropbox.com/oauth2/authorize"
+        f"?client_id={Config.DROPBOX_APP_KEY}"
+        f"&response_type=code"
+        f"&token_access_type=offline"
+        f"&redirect_uri=http://localhost:8000/api/v1/auth/dropbox/callback"
+        f"&state={state}"
+    )
+    return {"dropbox_auth_url": dropbox_auth_url}
+
+
+@auth_router.get("/dropbox/callback", status_code=status.HTTP_200_OK)
+async def auth_dropbox_callback(
+    code: str, state: str, session: AsyncSession = Depends(get_session)
+) -> dict:
+    """Callback URL for Dropbox OAuth2 authorization"""
+    try:
+        state_data = json.loads(state)
+        user_id = state_data.get("user_id")
+
+        token_url = "https://api.dropboxapi.com/oauth2/token"
+        data = {
+            "code": code,
+            "grant_type": "authorization_code",
+            "client_id": Config.DROPBOX_APP_KEY,
+            "client_secret": Config.DROPBOX_APP_SECRET,
+            "redirect_uri": "http://localhost:8000/api/v1/auth/dropbox/callback",
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        response = httpx.post(token_url, data=data, headers=headers)
+        token_data = response.json()
+
+        if "access_token" not in token_data:
+            raise HTTPException(status_code=400, detail="Failed to obtain access token")
+
+        access_token = token_data["access_token"]
+        refresh_token = token_data.get(
+            "refresh_token"
+        )  # Refresh token is returned only if offline access was requested
+        expires_in = token_data["expires_in"]
+
+        # Fetch Dropbox account details
+        user_info_url = "https://api.dropboxapi.com/2/users/get_current_account"
+        headers = {"Authorization": f"Bearer {access_token}"}
+        user_info_response = httpx.post(user_info_url, headers=headers)
+        user_info = user_info_response.json()
+
+        existing_drive = (
+            await session.exec(
+                select(StorageProvider)
+                .where(StorageProvider.provider_name == "dropbox")
+                .where(StorageProvider.firebase_uid == user_id)
+                .where(StorageProvider.email == user_info["email"])
+            )
+        ).first()
+
+        if existing_drive:
+            existing_drive.creds = json.dumps(
+                {
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                    "expires_in": expires_in,
+                }
+            )
+            await session.commit()
+        else:
+            dropbox_account = StorageProvider(
+                firebase_uid=user_id,
+                provider_name="dropbox",
+                email=user_info["email"],
+                creds=json.dumps(
+                    {
+                        "access_token": access_token,
+                        "refresh_token": refresh_token,
+                        "expires_in": expires_in,
+                    }
+                ),
+            )
+            session.add(dropbox_account)
+            await session.commit()
+
+        return HTMLResponse(
+            content="<html><body><h1>Authentication successful, You may close this window now.</h1></body></html>"
+        )
+
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(
+            status_code=400, detail=f"Error in Dropbox auth callback: {str(e)}"
         )

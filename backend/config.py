@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     FIREBASE_AUTH_PROVIDER_X509_CERT_URL: str
     FIREBASE_CLIENT_X509_CERT_URL: str
 
+    DROPBOX_APP_KEY: str
+    DROPBOX_APP_SECRET: str
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

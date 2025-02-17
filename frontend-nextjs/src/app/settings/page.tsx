@@ -39,7 +39,7 @@ const SettingsPage: React.FC = () => {
     const token = await getIdToken();
 
     try {
-      const response = await axiosPublic.get("api/v1/auth/google", {
+      const response = await axiosPublic.get("/api/v1/auth/google", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const google_auth_url = response.data["google_auth_url"];
@@ -87,17 +87,43 @@ const SettingsPage: React.FC = () => {
     });
   };
 
-  const handleConnectDropbox = () => {
-    toast.success("Dropbox connected successfully!", {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "dark",
-    });
+  const handleConnectDropbox = async () => {
+    const token = await getIdToken();
+
+    try {
+      const response = await axiosPublic.get("/api/v1/auth/dropbox", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const dropbox_auth_url = response.data["dropbox_auth_url"];
+      window.open(
+        dropbox_auth_url,
+        "DropboxAuth",
+        "width=500,height=600,scrollbars=yes"
+      );
+
+      // toast.success("Dropbox connected successfully!", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      //   hideProgressBar: false,
+      //   closeOnClick: false,
+      //   pauseOnHover: true,
+      //   draggable: true,
+      //   progress: undefined,
+      //   theme: "dark",
+      // });
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to connect Dropbox", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+    }
   };
   const handleGoBack = () => {
     router.back();
