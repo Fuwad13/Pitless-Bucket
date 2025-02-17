@@ -168,9 +168,6 @@ class FileManagerService:
                         os.remove(chunk_path)
             raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
-    async def download_file(self, session: AsyncSession, file_id: str, user_id: str):
-        pass
-
     async def delete_file(self, session: AsyncSession, file_id: str, firebase_uid: str):
         """Delete a file uploaded by User"""
         try:
@@ -228,30 +225,45 @@ class FileManagerService:
         result = await session.exec(stmt)
         return result.all()
 
-    async def create_folder(
-        self, session: AsyncSession, folder_name: str, user_id: str
+    async def download_file(
+        self, session: AsyncSession, file_id: str, firebase_uid: str
     ):
         pass
 
-    async def delete_folder(self, session: AsyncSession, folder_id: str, user_id: str):
+    async def create_folder(
+        self, session: AsyncSession, folder_name: str, firebase_uid: str
+    ):
+        pass
+
+    async def delete_folder(
+        self, session: AsyncSession, folder_id: str, firebase_uid: str
+    ):
         pass
 
     async def rename_folder(
-        self, session: AsyncSession, folder_id: str, user_id: str, new_name: str
+        self, session: AsyncSession, folder_id: str, firebase_uid: str, new_name: str
     ):
         pass
 
     async def move_file(
-        self, session: AsyncSession, file_id: str, user_id: str, new_folder_id: str
+        self, session: AsyncSession, file_id: str, firebase_uid: str, new_folder_id: str
     ):
         pass
 
     async def move_folder(
-        self, session: AsyncSession, folder_id: str, user_id: str, new_folder_id: str
+        self,
+        session: AsyncSession,
+        folder_id: str,
+        firebase_uid: str,
+        new_folder_id: str,
     ):
         pass
 
     async def add_new_storage_provider(
-        self, session: AsyncSession, provider_name: str, credentials: Dict, user_id: str
+        self,
+        session: AsyncSession,
+        provider_name: str,
+        credentials: Dict,
+        firebase_uid: str,
     ):
         pass
