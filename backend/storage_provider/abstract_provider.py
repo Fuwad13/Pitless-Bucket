@@ -12,11 +12,11 @@ class AbstractStorageProvider(ABC):
         pass
 
     @abstractmethod
-    def upload_chunk(self, file_path: str, file_name: str):
+    def upload_chunk(self):
         pass
 
     @abstractmethod
-    def download_chunk(self, file_path: str) -> str:
+    def download_chunk(self) -> str:
         pass
 
     @abstractmethod

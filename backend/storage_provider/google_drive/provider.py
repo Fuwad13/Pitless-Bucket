@@ -19,9 +19,8 @@ class GoogleDriveProvider(AbstractStorageProvider):
         return build("drive", "v3", credentials=creds)
 
     def upload_chunk(self, file_path, file_name):
-        media = MediaFileUpload(
-            file_path, mimetype="application/octet-stream", resumable=True
-        )
+        media = MediaFileUpload(file_path, mimetype="application/octet-stream")
+        logger.debug(f"Uploading chunk: {file_name}")
         drive_file = (
             self.drive_service.files()
             .create(media_body=media, fields="id", body={"name": file_name})

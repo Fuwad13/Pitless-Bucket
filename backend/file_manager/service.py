@@ -99,14 +99,13 @@ class FileManagerService:
 
             for idx, chunk_path in enumerate(chunk_paths):
                 chunk_name = f"{file.filename}.part{idx+1:03d}"
-                file_metadata = {"name": chunk_name}
                 # TODO: implement a strategy to select the storage provider
                 storage_provider_id, storage_provider = storage_providers[
                     idx % len(storage_providers)
                 ]
 
                 chunk_id_in_provider = await asyncio.to_thread(
-                    storage_provider.upload_chunk, chunk_path, file_metadata
+                    storage_provider.upload_chunk, chunk_path, chunk_name
                 )
                 uploaded_chunks.append(
                     {
