@@ -196,6 +196,7 @@ class FileManagerService:
                 await asyncio.to_thread(provider.delete_chunk, chunk.provider_file_id)
             await session.delete(result)
             await session.commit()
+            return {"message": f"{result.file_name} deleted successfully"}
 
         except Exception as e:
             await session.rollback()
@@ -203,9 +204,24 @@ class FileManagerService:
             raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
 
     async def rename_file(
-        self, session: AsyncSession, file_id: str, user_id: str, new_name: str
+        self, session: AsyncSession, file_id: str, firebase_uid: str, new_name: str
     ):
-        pass
+        try:
+            stmt = select(FileInfo).where(FileInfo.uid == file_id)
+            result = (await session.exec(stmt)).first()
+            if not result:
+                raise HTTPException(status_code=404, detail="File not found")
+            if result.firebase_uid != firebase_uid:
+                raise HTTPException(status_code=403, detail="Unauthorized")
+
+            result.file_name = new_name
+            await session.commit()
+            return {"message": "File renamed successfully"}
+
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Error in rename_file: {e}")
+            raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
 
     async def list_files(self, session: AsyncSession, firebase_uid: str):
         stmt = select(FileInfo).where(FileInfo.firebase_uid == firebase_uid)

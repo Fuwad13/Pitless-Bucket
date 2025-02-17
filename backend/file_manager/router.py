@@ -24,7 +24,6 @@ async def upload_file(
     current_user: dict = Depends(get_current_user),
 ):
     """Upload a file to User's Storage Provider(s)"""
-    logger.debug(f"Current User: {current_user}")
     return await fm_service.upload_file(session, file, current_user.get("uid"))
 
 
@@ -48,5 +47,17 @@ async def delete_file(
     current_user: dict = Depends(get_current_user),
 ):
     """Delete a file uploaded by User"""
-    logger.debug(f"Current User: {current_user}")
     return await fm_service.delete_file(session, file_id, current_user.get("uid"))
+
+
+@fm_router.put("/rename_file")
+async def rename_file(
+    file_id: uuid.UUID,
+    new_name: str,
+    session: AsyncSession = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Rename a file uploaded by User"""
+    return await fm_service.rename_file(
+        session, file_id, current_user.get("uid"), new_name
+    )

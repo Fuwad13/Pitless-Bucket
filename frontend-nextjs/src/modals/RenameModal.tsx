@@ -9,9 +9,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { toast } from "react-toastify";
 import useAxiosPublic from "../hooks/AxiosPublic";
+import { AuthContext } from "@/app/AuthContext";
 
 interface RenameModalProps {
   file: {
@@ -33,6 +34,7 @@ const RenameModal: React.FC<RenameModalProps> = ({
   const [newName, setNewName] = useState(file.file_name);
   const [loading, setLoading] = useState(false);
   const axiosPublic = useAxiosPublic();
+  const { getIdToken } = useContext(AuthContext);
 
   const handleRename = async () => {
     if (!newName.trim()) {
@@ -54,13 +56,21 @@ const RenameModal: React.FC<RenameModalProps> = ({
       console.log("file.uid:", typeof file.uid);
 
       setLoading(true);
-      const response = await axiosPublic.put(`/api/v1/drive/rename`, null, {
-        params: {
-          file_id: file.uid,
-          new_name: newName,
-        },
-      });
-
+      const token = await getIdToken();
+      const response = await axiosPublic.put(
+        `/api/v1/file_manager/rename_file`,
+        null,
+        {
+          params: {
+            file_id: file.uid,
+            new_name: newName,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("response:", response);
       if (response.status !== 200) {
         throw new Error("Failed to rename file");
       }

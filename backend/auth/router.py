@@ -109,7 +109,7 @@ async def auth_google_callback(
         if existing_drive:
             stmt = (
                 update(StorageProvider)
-                .where(StorageProvider.uid == uuid.UUID(existing_drive.uid))
+                .where(StorageProvider.uid == existing_drive.uid)
                 .values(creds=creds.to_json())
             )
             await session.exec(stmt)
