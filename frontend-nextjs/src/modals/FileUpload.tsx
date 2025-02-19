@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import useAxiosPublic from "../hooks/AxiosPublic";
 import { AuthContext } from "@/app/AuthContext";
+import { set } from "date-fns";
 
 interface FileUploadProps {
   refreshFiles: () => void;
@@ -95,10 +96,21 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
     selectedFiles.forEach((file) => {
       formData.append("file", file);
     });
+    const uploadToastId = toast.loading("File uploading...", {
+      position: "top-right",
+      autoClose: false,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "dark",
+    });
 
     try {
       setLoading(true);
       const token = await getIdToken();
+      setIsDialogOpen(false);
       const response = await axiosPublic.post(
         "/api/v1/file_manager/upload_file",
         formData,
@@ -120,17 +132,24 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
         throw new Error("Upload failed");
       }
 
-      console.log("Upload successful:", response.data);
-      toast.success("File uploaded successfully!", {
-        position: "top-right",
+      toast.update(uploadToastId, {
+        render: "File uploaded successfully!",
+        type: "success",
+        isLoading: false,
         autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
       });
+
+      // console.log("Upload successful:", response.data);
+      // toast.success("File uploaded successfully!", {
+      //   position: "top-right",
+      //   autoClose: 2000,
+      //   hideProgressBar: false,
+      //   closeOnClick: false,
+      //   pauseOnHover: true,
+      //   draggable: true,
+      //   progress: undefined,
+      //   theme: "dark",
+      // });
     } catch (error) {
       console.error("Error uploading files:", error);
       toast.error("Failed to upload file", {
@@ -144,6 +163,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
         theme: "dark",
       });
     } finally {
+      setUploadProgress(0);
       setLoading(false);
       setSelectedFiles([]);
       refreshFiles();

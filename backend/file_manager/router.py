@@ -61,3 +61,13 @@ async def rename_file(
     return await fm_service.rename_file(
         session, file_id, current_user.get("uid"), new_name
     )
+
+
+@fm_router.get("/storage_usage")
+async def get_storage_usage(
+    session: AsyncSession = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Get Storage Usage of User"""
+    usage = await fm_service.get_storage_usage(session, current_user.get("uid"))
+    return usage

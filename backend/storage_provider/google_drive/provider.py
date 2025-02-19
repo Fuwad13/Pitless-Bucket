@@ -36,4 +36,10 @@ class GoogleDriveProvider(AbstractStorageProvider):
         self.drive_service.files().delete(fileId=file_id).execute()
 
     def get_stats(self):
-        pass
+        about = self.drive_service.about().get(fields="storageQuota").execute()
+        used = int(about["storageQuota"]["usageInDrive"]) + int(
+            about["storageQuota"]["usageInDriveTrash"]
+        )
+        total = int(about["storageQuota"]["limit"])
+        available = total - used
+        return {"used": used, "available": available, "total": total}

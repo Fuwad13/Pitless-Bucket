@@ -41,6 +41,7 @@ const Dashboard: React.FC = () => {
     const fetchFiles = async () => {
       try {
         const token = await getIdToken();
+        // console.log("Token:", token);
         const response = await axiosPublic.get(
           "/api/v1/file_manager/list_files",
           { headers: { Authorization: `Bearer ${token}` } }

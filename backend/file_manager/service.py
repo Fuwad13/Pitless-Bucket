@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import time
 from typing import Dict, List, Tuple
 import uuid
 import tempfile
@@ -59,16 +60,7 @@ class FileManagerService:
         self, session: AsyncSession, file: UploadFile, firebase_uid: str
     ):
         try:
-            async with aiofiles.tempfile.NamedTemporaryFile(
-                "wb", delete=False
-            ) as temp_file:
-                while True:
-                    chunk = await file.read(CHUNK_SIZE)
-                    if not chunk:
-                        break
-                    await temp_file.write(chunk)
-                temp_file_path = temp_file.name
-
+            temp_file_path = await self.save_to_temp_file(file)
             # TODO: implement chunk strategy selection here later
             # Get the info of the user's linked storage providers and select a distribution strategy
             chunk_strat = fixed_size_chunk_strategy  # TODO: use Strategy pattern to select chunk strategy
@@ -83,7 +75,6 @@ class FileManagerService:
                 StorageProvider.firebase_uid == firebase_uid
             )
             results = await session.exec(stmt)
-            logger.debug(f"Results: {results} for firebase_uid: {firebase_uid}")
             storage_providers = []
             for res in results:
                 storage_provider = get_provider(
@@ -98,7 +89,7 @@ class FileManagerService:
             logger.debug(f"Storage providers: {storage_providers}")
 
             for idx, chunk_path in enumerate(chunk_paths):
-                chunk_name = f"{file.filename}.part{idx+1:03d}"
+                chunk_name = f"{file.filename}_{int(time.time())}.part{idx+1:03d}"
                 # TODO: implement a strategy to select the storage provider
                 storage_provider_id, storage_provider = storage_providers[
                     idx % len(storage_providers)
@@ -167,6 +158,18 @@ class FileManagerService:
                     if os.path.exists(chunk_path):
                         os.remove(chunk_path)
             raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+    async def save_to_temp_file(self, file: UploadFile) -> str:
+        logger.debug(dir(file))
+        async with aiofiles.tempfile.NamedTemporaryFile(
+            "wb", delete=False
+        ) as temp_file:
+            while True:
+                chunk = await file.read(CHUNK_SIZE)
+                if not chunk:
+                    break
+                await temp_file.write(chunk)
+            return temp_file.name
 
     async def delete_file(self, session: AsyncSession, file_id: str, firebase_uid: str):
         """Delete a file uploaded by User"""
@@ -258,6 +261,44 @@ class FileManagerService:
         new_folder_id: str,
     ):
         pass
+
+    async def get_storage_usage(self, session: AsyncSession, firebase_uid: str) -> Dict:
+        stmt = select(StorageProvider).where(
+            StorageProvider.firebase_uid == firebase_uid
+        )
+        results = await session.exec(stmt)
+        if not results:
+            raise HTTPException(status_code=400, detail="No storage providers linked")
+        usage = {
+            "used": 0,
+            "available": 0,
+            "total": 0,
+        }
+        for res in results:
+            storage_provider = get_provider(
+                res.provider_name, credentials=json.loads(res.creds)
+            )
+            stat_dict = await asyncio.to_thread(storage_provider.get_stats)
+            usage["used"] += stat_dict["used"]
+            usage["available"] += stat_dict["available"]
+            usage["total"] += stat_dict["total"]
+        return usage
+
+    async def sync_storage_stats(self, session: AsyncSession, firebase_uid: str):
+        stmt = select(StorageProvider).where(
+            StorageProvider.firebase_uid == firebase_uid
+        )
+        results = await session.exec(stmt)
+        storage_providers = []
+        for res in results:
+            storage_provider = get_provider(
+                res.provider_name, credentials=json.loads(res.creds)
+            )
+            stat_dict = await asyncio.to_thread(storage_provider.get_stats)
+            logger.debug(
+                f"Stats for {storage_provider.__class__.__name__}: {stat_dict}"
+            )
+            storage_providers.append((str(res.uid), storage_provider))
 
     async def add_new_storage_provider(
         self,

@@ -3,15 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   Home,
-  Loader2,
   Menu,
   Settings,
   HardDrive,
-  Cloud,
-  Github,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
-import React, { useContext, useEffect, useState } from "react";
+import React, { use, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
@@ -19,8 +17,12 @@ import withReactContent from "sweetalert2-react-content";
 import { AuthContext } from "@/app/AuthContext";
 import { useRouter } from "next/navigation";
 import useAxiosPublic from "@/hooks/use-axios";
-import { headers } from "next/headers";
-import { auth } from "../firebase";
+
+interface StorageStat {
+  used: number;
+  available: number;
+  total: number;
+}
 
 const SettingsPage: React.FC = () => {
   const { currentUser, getIdToken } = useContext(AuthContext);
@@ -28,12 +30,42 @@ const SettingsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const MySwal = withReactContent(Swal);
   const axiosPublic = useAxiosPublic();
+  const [error, setError] = useState<string | null>(null);
+  const [storageStat, setStorageStat] = useState<StorageStat>({
+    used: 0,
+    available: 0,
+    total: 0,
+  });
+  const hasFetchedStorageStat = useRef(false);
 
   useEffect(() => {
     if (!currentUser) {
       router.push("/login");
+    } else if (!hasFetchedStorageStat.current) {
+      fetchStorageStat();
+      hasFetchedStorageStat.current = true;
     }
   }, [currentUser, router]);
+
+  const fetchStorageStat = async () => {
+    try {
+      setLoading(true);
+      const token = await getIdToken();
+      const response = await axiosPublic.get(
+        "/api/v1/file_manager/storage_usage",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setStorageStat(response.data);
+      console.log("Storage Stat:", response.data);
+    } catch (error) {
+      setError((error as Error).message);
+      console.error("Error fetching storage stat:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleConnectGoogleDrive = async () => {
     const token = await getIdToken();
@@ -85,6 +117,16 @@ const SettingsPage: React.FC = () => {
       progress: undefined,
       theme: "dark",
     });
+  };
+
+  const formatSize = (size: number): string => {
+    if (size === 0) return "0 Bytes";
+
+    const units = ["Bytes", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(size) / Math.log(1024));
+    const formattedSize = (size / Math.pow(1024, i)).toFixed(2);
+
+    return `${formattedSize} ${units[i]}`;
   };
 
   const handleConnectDropbox = async () => {
@@ -238,27 +280,42 @@ const SettingsPage: React.FC = () => {
         </div>
 
         {/* Current Storage Section */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Current Storage
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <HardDrive className="text-blue-500" size={24} />
-                <div>
-                  <h3 className="text-lg font-medium text-gray-700">
-                    Local Storage
-                  </h3>
-                  <p className="text-sm text-gray-500">500 MB of 1 GB used</p>
-                </div>
-              </div>
-              <Button variant="outline" className="text-blue-600">
-                Manage
-              </Button>
+
+        {loading ? (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex flex-col-reverse items-center justify-center gap-2">
+              <p>Loading Storage Usage</p>
+              <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
             </div>
           </div>
-        </div>
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Current Storage
+            </h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <HardDrive className="text-blue-500" size={24} />
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-700">
+                      Storage
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {formatSize(storageStat.used)} of{" "}
+                      {formatSize(storageStat.total)} used
+                    </p>
+                  </div>
+                </div>
+                <Button variant="outline" className="text-blue-600">
+                  Manage
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
