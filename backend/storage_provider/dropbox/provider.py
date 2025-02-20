@@ -4,6 +4,7 @@ from backend.storage_provider.abstract_provider import AbstractStorageProvider
 from .utils import get_valid_dropbox_token
 from backend.log.logger import get_logger
 from pathlib import Path
+import tempfile
 
 logger = get_logger(__name__, Path(__file__).parent.parent.parent / "log" / "app.log")
 
@@ -25,7 +26,12 @@ class DropBoxProvider(AbstractStorageProvider):
         return str(result.id)
 
     def download_chunk(self, file_id) -> str:
-        pass
+        dbx = dropbox.Dropbox(self.access_token)
+        metadata = dbx.files_get_metadata(file_id)
+        file_path = metadata.path_lower
+        with tempfile.NamedTemporaryFile("wb", delete=False) as tmp:
+            dbx.files_download_to_file(tmp.name, file_path)
+            return tmp.name
 
     def delete_chunk(self, file_id):
         dbx = dropbox.Dropbox(self.access_token)

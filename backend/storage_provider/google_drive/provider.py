@@ -1,9 +1,12 @@
 from pathlib import Path
+import tempfile
 from backend.storage_provider.abstract_provider import AbstractStorageProvider
 from googleapiclient.discovery import build, Resource
 from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaFileUpload
 from backend.log.logger import get_logger
+from googleapiclient.http import MediaIoBaseDownload
+
 
 logger = get_logger(__name__, Path(__file__).parent.parent.parent / "log" / "app.log")
 
@@ -30,7 +33,13 @@ class GoogleDriveProvider(AbstractStorageProvider):
         return drive_file["id"]
 
     def download_chunk(self, file_id):
-        pass
+        request = self.drive_service.files().get_media(fileId=file_id)
+        with tempfile.NamedTemporaryFile("wb", delete=False) as tmp:
+            downloader = MediaIoBaseDownload(tmp, request)
+            done = False
+            while done is False:
+                status, done = downloader.next_chunk()
+            return tmp.name
 
     def delete_chunk(self, file_id):
         self.drive_service.files().delete(fileId=file_id).execute()

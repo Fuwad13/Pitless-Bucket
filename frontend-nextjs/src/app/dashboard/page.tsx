@@ -41,7 +41,7 @@ const Dashboard: React.FC = () => {
     const fetchFiles = async () => {
       try {
         const token = await getIdToken();
-        // console.log("Token:", token);
+        console.log("Token:", token);
         const response = await axiosPublic.get(
           "/api/v1/file_manager/list_files",
           { headers: { Authorization: `Bearer ${token}` } }
@@ -81,20 +81,28 @@ const Dashboard: React.FC = () => {
     uid: string;
   }) => {
     try {
-      const downloadLink =
-        axiosPublic.defaults.baseURL +
-        "/api/v1/drive/download?file_id=" +
-        file.uid;
+      const response = await axiosPublic.get(
+        "/api/v1/file_manager/download_file",
+        {
+          params: { file_id: file.uid },
+          responseType: "blob",
+          headers: { Authorization: `Bearer ${await getIdToken()}` },
+        }
+      );
+
+      const blob = new Blob([response.data]);
+
+      const downloadLink = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = downloadLink;
-      a.download = file.file_name;
+      a.download = `${file.file_name}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
 
       window.URL.revokeObjectURL(downloadLink);
       console.log(`Download Starting: ${file.uid} - ${file.file_name}`);
-      toast.success("File download starting soon!", {
+      toast.success("File downloaded successfully!", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,

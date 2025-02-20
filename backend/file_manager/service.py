@@ -9,6 +9,7 @@ from pathlib import Path
 
 import aiofiles
 from fastapi import HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 from backend.chunk_strategy.strategy import FixedSizeChunkStrategy
@@ -160,7 +161,6 @@ class FileManagerService:
             raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
     async def save_to_temp_file(self, file: UploadFile) -> str:
-        logger.debug(dir(file))
         async with aiofiles.tempfile.NamedTemporaryFile(
             "wb", delete=False
         ) as temp_file:
@@ -231,7 +231,48 @@ class FileManagerService:
     async def download_file(
         self, session: AsyncSession, file_id: str, firebase_uid: str
     ):
-        pass
+        try:
+            stmt = select(FileInfo).where(FileInfo.uid == file_id)
+            result = (await session.exec(stmt)).first()
+            if not result:
+                raise HTTPException(status_code=404, detail="File not found")
+            if result.firebase_uid != firebase_uid:
+                raise HTTPException(status_code=403, detail="Unauthorized")
+
+            stmt = select(FileChunk).where(FileChunk.file_id == file_id)
+            chunks = await session.exec(stmt)
+            if not chunks:
+                raise HTTPException(status_code=404, detail="File Chunks not found")
+            async with aiofiles.tempfile.NamedTemporaryFile(
+                "wb", delete=False, delete_on_close=True
+            ) as temp_file:
+                for chunk in chunks:
+                    stmt = select(StorageProvider).where(
+                        StorageProvider.uid == chunk.provider_id
+                    )
+                    res_sp = (await session.exec(stmt)).first()
+                    provider = get_provider(
+                        res_sp.provider_name,
+                        credentials=json.loads(res_sp.creds),
+                    )
+                    chunk_path = await asyncio.to_thread(
+                        provider.download_chunk, chunk.provider_file_id
+                    )
+                    async with aiofiles.open(chunk_path, "rb") as f:
+                        await temp_file.write(await f.read())
+                    os.remove(chunk_path)
+                return FileResponse(
+                    temp_file.name,
+                    headers={
+                        "Content-Disposition": f'attachment; filename="{result.file_name}"',
+                        "Content-Type": result.content_type,
+                        "Content-Length": str(result.size),
+                    },
+                )
+
+        except Exception as e:
+            logger.error(f"Error in download_file: {e}")
+            raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
 
     async def create_folder(
         self, session: AsyncSession, folder_name: str, firebase_uid: str
@@ -285,20 +326,7 @@ class FileManagerService:
         return usage
 
     async def sync_storage_stats(self, session: AsyncSession, firebase_uid: str):
-        stmt = select(StorageProvider).where(
-            StorageProvider.firebase_uid == firebase_uid
-        )
-        results = await session.exec(stmt)
-        storage_providers = []
-        for res in results:
-            storage_provider = get_provider(
-                res.provider_name, credentials=json.loads(res.creds)
-            )
-            stat_dict = await asyncio.to_thread(storage_provider.get_stats)
-            logger.debug(
-                f"Stats for {storage_provider.__class__.__name__}: {stat_dict}"
-            )
-            storage_providers.append((str(res.uid), storage_provider))
+        pass
 
     async def add_new_storage_provider(
         self,
