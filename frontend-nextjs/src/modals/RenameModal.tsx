@@ -9,9 +9,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { toast } from "react-toastify";
 import useAxiosPublic from "../hooks/AxiosPublic";
+import { AuthContext } from "@/app/AuthContext";
 
 interface RenameModalProps {
   file: {
@@ -30,12 +31,15 @@ const RenameModal: React.FC<RenameModalProps> = ({
   onClose,
   refreshFiles,
 }) => {
-  const [newName, setNewName] = useState(file.file_name);
+  const [fileNameWithoutExtension, setFileNameWithoutExtension] = useState(
+    file.file_name.split(".").slice(0, -1).join(".")
+  );
   const [loading, setLoading] = useState(false);
   const axiosPublic = useAxiosPublic();
+  const { getIdToken } = useContext(AuthContext);
 
   const handleRename = async () => {
-    if (!newName.trim()) {
+    if (!fileNameWithoutExtension.trim()) {
       toast.error("Please enter a valid name", {
         position: "top-right",
         autoClose: 3000,
@@ -50,17 +54,25 @@ const RenameModal: React.FC<RenameModalProps> = ({
     }
 
     try {
-      console.log("newName:", typeof newName);
-      console.log("file.uid:", typeof file.uid);
-
       setLoading(true);
-      const response = await axiosPublic.put(`/api/v1/drive/rename`, null, {
-        params: {
-          file_id: file.uid,
-          new_name: newName,
-        },
-      });
+      const token = await getIdToken();
+      const newFileName = `${fileNameWithoutExtension}.${file.extension}`;
 
+      const response = await axiosPublic.put(
+        `/api/v1/file_manager/rename_file`,
+        null,
+        {
+          params: {
+            file_id: file.uid,
+            new_name: newFileName,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("response:", response);
       if (response.status !== 200) {
         throw new Error("Failed to rename file");
       }
@@ -104,8 +116,8 @@ const RenameModal: React.FC<RenameModalProps> = ({
         </DialogHeader>
         <div className="space-y-4">
           <Input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            value={fileNameWithoutExtension}
+            onChange={(e) => setFileNameWithoutExtension(e.target.value)}
             placeholder="Enter new name"
           />
         </div>
