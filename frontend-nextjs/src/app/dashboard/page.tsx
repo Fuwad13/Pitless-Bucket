@@ -12,7 +12,7 @@ import FileUpload from "@/modals/FileUpload";
 import FileCard from "@/components/customComponents/FileCard";
 import { AuthContext } from "@/app/AuthContext";
 import { useRouter } from "next/navigation";
-import { get } from "http";
+import SearchBar from "@/components/customComponents/SearchBar";
 
 interface FileType {
   uid: string;
@@ -31,6 +31,7 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const MySwal = withReactContent(Swal);
+  const [filteredFiles, setFilteredFiles] = useState<FileType[]>([]);
   const { currentUser, getIdToken } = useContext(AuthContext);
   const router = useRouter();
   useEffect(() => {
@@ -50,6 +51,7 @@ const Dashboard: React.FC = () => {
           throw new Error("Failed to fetch files");
         }
         setFiles(response.data);
+        setFilteredFiles(response.data);
       } catch (error) {
         setError((error as Error).message);
         console.error("Error fetching files:", error);
@@ -69,6 +71,7 @@ const Dashboard: React.FC = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setFiles(response.data);
+      setFilteredFiles(response.data);
     } catch (error) {
       setError((error as Error).message);
     } finally {
@@ -178,6 +181,14 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleSearch = (query: string) => {
+    const lowerCaseQuery = query.toLowerCase();
+    const filtered = files.filter((file) =>
+      file.file_name.toLowerCase().includes(lowerCaseQuery)
+    );
+    setFilteredFiles(filtered);
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar for Large Screens, we see this at desktop*/}
@@ -230,9 +241,12 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content section */}
       <main className="flex-1 p-6 bg-gray-100">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Your Files & Folders
-        </h1>
+        <div className="flex flex-col justify-center items-center gap-4">
+          <h1 className="text-3xl font-bold text-gray-900 text-center">
+            Your Files & Folders
+          </h1>
+          <SearchBar onSearch={handleSearch} />
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           {loading ? (
             <div className="min-h-screen flex justify-center items-center col-span-3">
@@ -243,8 +257,8 @@ const Dashboard: React.FC = () => {
             </div>
           ) : error ? (
             <p className="text-red-500">{error}</p>
-          ) : (
-            files.map((file) => (
+          ) : filteredFiles.length > 0 ? (
+            filteredFiles.map((file) => (
               <FileCard
                 key={file.uid}
                 file={file}
@@ -253,6 +267,10 @@ const Dashboard: React.FC = () => {
                 refreshFiles={refreshFiles}
               />
             ))
+          ) : (
+            <p className="col-span-3 text-center text-gray-500">
+              No files found matching your search.
+            </p>
           )}
         </div>
       </main>
