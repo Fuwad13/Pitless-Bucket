@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, Loader2, Menu, Settings } from "lucide-react";
+import { Grid, Home, List, Loader2, Menu, Settings } from "lucide-react";
 import React, { useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
@@ -13,6 +13,8 @@ import FileCard from "@/components/customComponents/FileCard";
 import { AuthContext } from "@/app/AuthContext";
 import { useRouter } from "next/navigation";
 import SearchBar from "@/components/customComponents/SearchBar";
+import FileTable from "@/components/customComponents/FileTable";
+import RenameModal from "@/modals/RenameModal";
 
 interface FileType {
   uid: string;
@@ -33,7 +35,11 @@ const Dashboard: React.FC = () => {
   const MySwal = withReactContent(Swal);
   const [filteredFiles, setFilteredFiles] = useState<FileType[]>([]);
   const { currentUser, getIdToken } = useContext(AuthContext);
+  const [layoutMode, setLayoutMode] = useState<"card" | "table">("card");
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [fileToRename, setFileToRename] = useState<FileType | null>(null);
   const router = useRouter();
+
   useEffect(() => {
     if (!currentUser) {
       router.push("/login");
@@ -181,6 +187,11 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleEdit = (file: FileType) => {
+    setFileToRename(file);
+    setRenameModalOpen(true);
+  };
+
   const handleSearch = (query: string) => {
     const lowerCaseQuery = query.toLowerCase();
     const filtered = files.filter((file) =>
@@ -245,9 +256,27 @@ const Dashboard: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900 text-center">
             Your Files & Folders
           </h1>
-          <SearchBar onSearch={handleSearch} />
+
+          <div className="w-full max-w-2xl flex justify-center gap-4">
+            <SearchBar onSearch={handleSearch} />
+            <Button
+              className="mt-1"
+              variant="outline"
+              size="icon"
+              onClick={() =>
+                setLayoutMode(layoutMode === "card" ? "table" : "card")
+              }
+              title={
+                layoutMode === "card"
+                  ? "Switch to Table View"
+                  : "Switch to Card View"
+              }
+            >
+              {layoutMode === "card" ? <List size={24} /> : <Grid size={24} />}
+            </Button>
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        <div className="mt-6">
           {loading ? (
             <div className="min-h-screen flex justify-center items-center col-span-3">
               <div className="flex flex-col-reverse items-center justify-center gap-2">
@@ -258,21 +287,40 @@ const Dashboard: React.FC = () => {
           ) : error ? (
             <p className="text-red-500">{error}</p>
           ) : filteredFiles.length > 0 ? (
-            filteredFiles.map((file) => (
-              <FileCard
-                key={file.uid}
-                file={file}
+            layoutMode === "card" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredFiles.map((file) => (
+                  <FileCard
+                    key={file.uid}
+                    file={file}
+                    onDownload={handleDownload}
+                    onDelete={handleDelete}
+                    refreshFiles={refreshFiles}
+                  />
+                ))}
+              </div>
+            ) : (
+              <FileTable
+                files={filteredFiles}
                 onDownload={handleDownload}
                 onDelete={handleDelete}
-                refreshFiles={refreshFiles}
+                onEdit={handleEdit}
               />
-            ))
+            )
           ) : (
             <p className="col-span-3 text-center text-gray-500">
               No files found matching your search.
             </p>
           )}
         </div>
+        {renameModalOpen && fileToRename && (
+          <RenameModal
+            file={fileToRename}
+            isOpen={renameModalOpen}
+            onClose={() => setRenameModalOpen(false)}
+            refreshFiles={refreshFiles}
+          />
+        )}
       </main>
     </div>
   );
