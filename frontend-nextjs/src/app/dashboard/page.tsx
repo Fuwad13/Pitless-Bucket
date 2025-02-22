@@ -251,7 +251,7 @@ const Dashboard: React.FC = () => {
       </Sheet>
 
       {/* Main Content section */}
-      <main className="flex-1 p-6 bg-gray-100">
+      <main className="flex-1 p-6 bg-gray-100 overflow-x-auto">
         <div className="flex flex-col justify-center items-center gap-4">
           <h1 className="text-3xl font-bold text-gray-900 text-center">
             Your Files & Folders

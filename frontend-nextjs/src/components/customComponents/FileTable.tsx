@@ -34,8 +34,8 @@ const FileTable: React.FC<FileTableProps> = ({
   onEdit,
 }) => {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white border border-gray-200 rounded-md shadow-sm">
+    <div className="overflow-x-auto w-full p-4">
+      <table className="w-full bg-white border border-gray-200 rounded-md shadow-sm">
         <thead className="bg-gray-50">
           <tr>
             <th className="py-3 px-4 text-left text-sm font-medium text-gray-600 whitespace-nowrap">
