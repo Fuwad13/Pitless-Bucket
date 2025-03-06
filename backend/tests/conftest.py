@@ -22,15 +22,5 @@ def fake_session():
 
 
 @pytest.fixture
-def fake_drive_service():
-    return mock_drive_service
-
-
-@pytest.fixture
-def fake_user_service():
-    return mock_user_service
-
-
-@pytest.fixture
 def test_client():
     return TestClient(app)

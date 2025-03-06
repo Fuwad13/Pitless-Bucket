@@ -23,6 +23,7 @@ class DropBoxProvider(AbstractStorageProvider):
         with open(file_path, "rb") as f:
             data = f.read()
         result = dbx.files_upload(data, f"/{file_name}")
+        logger.debug(f"Uploaded chunk: {file_name} -> dropbox id: {result.id}")
         return str(result.id)
 
     def download_chunk(self, file_id) -> str:

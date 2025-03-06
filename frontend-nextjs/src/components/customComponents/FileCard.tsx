@@ -44,8 +44,8 @@ const FileCard: React.FC<FileCardProps> = ({
   onDelete,
   refreshFiles,
 }) => {
-  const allowedVideoExtensions = ["mp4", "webm", "mkv"];
-  const allowedImageExtensions = ["png", "jpg", "jpeg"];
+  // const allowedVideoExtensions = ["mp4", "webm", "mkv"];
+  // const allowedImageExtensions = ["png", "jpg", "jpeg"];
   const router = useRouter();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
@@ -126,7 +126,8 @@ const FileCard: React.FC<FileCardProps> = ({
 
         <DropdownMenu.Portal>
           <DropdownMenu.Content className="min-w-[140px] bg-white border border-gray-200 rounded-md shadow-lg z-50">
-            {allowedVideoExtensions.includes(file.extension) && (
+            {/* TODO : add this later */}
+            {/* {allowedVideoExtensions.includes(file.extension) && (
               <DropdownMenu.Item
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                 onClick={() => router.push(`/watch/${file.uid}`)}
@@ -142,7 +143,7 @@ const FileCard: React.FC<FileCardProps> = ({
               >
                 <ImageIcon size={16} className="text-gray-500" /> View Image
               </DropdownMenu.Item>
-            )}
+            )} */}
             <DropdownMenu.Item
               className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
               onClick={() => handleDownload(file)}
