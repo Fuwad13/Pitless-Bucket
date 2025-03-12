@@ -6,6 +6,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaFileUpload
 from backend.log.logger import get_logger
 from googleapiclient.http import MediaIoBaseDownload
+from google.auth.transport.requests import Request
 
 
 logger = get_logger(__name__, Path(__file__).parent.parent.parent / "log" / "app.log")
@@ -19,6 +20,12 @@ class GoogleDriveProvider(AbstractStorageProvider):
 
     def authenticate(self, credentials) -> Resource:
         creds = Credentials.from_authorized_user_info(credentials)
+        if not creds.valid:
+            if creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                raise ValueError("Invalid credentials")
+
         return build("drive", "v3", credentials=creds)
 
     def upload_chunk(self, file_path, file_name):
