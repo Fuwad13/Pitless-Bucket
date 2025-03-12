@@ -4,6 +4,7 @@ from os import getenv
 
 from handlers.echo import echo_router
 from handlers.start import start_router
+from handlers.pitless_bucket import pb_router
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -14,18 +15,15 @@ TOKEN = Config.TOKEN
 
 
 async def main() -> None:
-    # Dispatcher is a root router
     dp = Dispatcher()
-    # Register all the routers from handlers package
     dp.include_routers(
         start_router,
-        echo_router,
+        # echo_router,
+        pb_router,
     )
 
-    # Initialize Bot instance with default bot properties which will be passed to all API calls
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
-    # And the run events dispatching
     await dp.start_polling(bot)
 
 
