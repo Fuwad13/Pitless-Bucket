@@ -237,3 +237,15 @@ async def link_telegram(req: dict, session: AsyncSession = Depends(get_session))
     user.telegram_id = req.get("telegram_id")
     await session.commit()
     return user
+
+
+@auth_router.get("/get_firebase_uid_by_tgid", status_code=status.HTTP_200_OK)
+async def get_uid_by_tgid(
+    tg_id: int, session: AsyncSession = Depends(get_session)
+) -> dict:
+    """Get firebase_uid by Telegram ID"""
+    stmt = select(User).where(User.telegram_id == tg_id)
+    user = (await session.exec(stmt)).first()
+    if not user:
+        return {"error": "User not found"}
+    return {"firebase_uid": user.firebase_uid}

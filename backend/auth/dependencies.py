@@ -22,7 +22,6 @@ FIREBASE_CLIENT_CREDS = {
     "universe_domain": "googleapis.com",
 }
 
-# Initialize Firebase Admin (only once)
 if not firebase_admin._apps:
     cred = credentials.Certificate(FIREBASE_CLIENT_CREDS)
     firebase_admin.initialize_app(cred)
