@@ -23,6 +23,9 @@ class User(SQLModel, table=True):
     display_name: str
     username: str
     email: str = Field(index=True, sa_column_kwargs={"unique": True})
+    telegram_id: Optional[int] = Field(
+        default=None, sa_column=Column(BIGINT, nullable=True)
+    )
     created_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now))
 
