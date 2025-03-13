@@ -34,7 +34,7 @@ const SettingsPage: React.FC = () => {
     available: 0,
     total: 0,
   });
-  const [userId, setUserId] = useState("");
+  const [telegramUserId, setTelegramUserId] = useState("");
   const hasFetchedStorageStat = useRef(false);
 
   useEffect(() => {
@@ -175,13 +175,19 @@ const SettingsPage: React.FC = () => {
 
   // telegram handle functions
   const handleInputChange = (event) => {
-    setUserId(event.target.value);
+    setTelegramUserId(event.target.value);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // Add your submission logic here
-    console.log("Connecting to Telegram User ID:", userId);
+    const token = await getIdToken();
+    const response = await axiosPublic.post(
+      `/api/v1/auth/link_telegram?tg_id=${telegramUserId}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    console.log(response);
+    console.log("Connecting to Telegram User ID:", telegramUserId);
   };
 
   return (
@@ -315,7 +321,7 @@ const SettingsPage: React.FC = () => {
               </div>
               {/* add connected status later */}
               {
-                // userId ?
+                // telegramUserId ?
                 <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
                   <Input
                     type="text"
