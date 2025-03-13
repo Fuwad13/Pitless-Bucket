@@ -31,7 +31,6 @@ class FirebaseTokenBearer(HTTPBearer):
     async def __call__(self, request: Request) -> dict:
         credentials: HTTPAuthorizationCredentials = await super().__call__(request)
         token = credentials.credentials
-
         try:
             decoded_token = firebase_auth.verify_id_token(token)
         except Exception as e:

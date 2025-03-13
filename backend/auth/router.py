@@ -227,16 +227,20 @@ async def auth_dropbox_callback(
         )
 
 
-@auth_router.post("/link_telegram", status_code=status.HTTP_201_CREATED)
-async def link_telegram(req: dict, session: AsyncSession = Depends(get_session)):
+@auth_router.post("/link_telegram", status_code=status.HTTP_200_OK)
+async def link_tg(
+    tg_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
+) -> dict:
     """Link a telegram account to the user"""
-    stmt = select(User).where(User.firebase_uid == req.get("firebase_uid"))
+    stmt = select(User).where(User.firebase_uid == current_user.get("uid"))
     user = (await session.exec(stmt)).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    user.telegram_id = req.get("telegram_id")
+    user.telegram_id = tg_id
     await session.commit()
-    return user
+    return {"message": "Telegram account linked successfully"}
 
 
 @auth_router.get("/get_firebase_uid_by_tgid", status_code=status.HTTP_200_OK)
