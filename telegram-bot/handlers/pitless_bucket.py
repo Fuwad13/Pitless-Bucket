@@ -61,23 +61,6 @@ async def cmd_link_account(message: Message) -> None:
     )
     await message.answer(f"{message.from_user.id}")
 
-@pb_router.message(Command("start"))
-async def cmd_start(message: Message):
-    await message.answer('Welcome to PitLess Bucket!')
-
-@pb_router.message(Command("help"))
-async def cmd_help(message: Message):
-    await message.answer("""
-        Available Commands:
-        /start - Show welcome message
-        /link - Link to your PitLess Bucket Account
-        /whoami - Check the current session
-        /logout - Log out of the current session
-        /files - List all available files
-        /upload - Upload a new file
-        /download <filename> - Download a file by name
-        /help - Show this help message
-    """)
 
 @pb_router.message(Command("files"))
 async def cmd_list_files(message: Message) -> None:

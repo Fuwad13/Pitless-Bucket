@@ -9,14 +9,13 @@ import {
   ArrowLeft,
   Loader2,
 } from "lucide-react";
-import React, { use, useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
 import { AuthContext } from "@/app/AuthContext";
 import { useRouter } from "next/navigation";
 import useAxiosPublic from "@/hooks/use-axios";
+import { Input } from "@/components/ui/input";
 
 interface StorageStat {
   used: number;
@@ -28,7 +27,6 @@ const SettingsPage: React.FC = () => {
   const { currentUser, getIdToken } = useContext(AuthContext);
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(false);
-  const MySwal = withReactContent(Swal);
   const axiosPublic = useAxiosPublic();
   const [error, setError] = useState<string | null>(null);
   const [storageStat, setStorageStat] = useState<StorageStat>({
@@ -36,6 +34,7 @@ const SettingsPage: React.FC = () => {
     available: 0,
     total: 0,
   });
+  const [userId, setUserId] = useState("");
   const hasFetchedStorageStat = useRef(false);
 
   useEffect(() => {
@@ -65,6 +64,9 @@ const SettingsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+  const HandleConnectTelegram = async () => {
+    console.log("connect TG!");
   };
 
   const handleConnectGoogleDrive = async () => {
@@ -171,6 +173,17 @@ const SettingsPage: React.FC = () => {
     router.back();
   };
 
+  // telegram handle functions
+  const handleInputChange = (event) => {
+    setUserId(event.target.value);
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    // Add your submission logic here
+    console.log("Connecting to Telegram User ID:", userId);
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar for Large Screens */}
@@ -275,6 +288,52 @@ const SettingsPage: React.FC = () => {
               <p className="text-sm text-gray-500">
                 Connect your Dropbox account
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Connect ohter accounts */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Connect other accounts
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Telegram */}
+            <div className="flex flex-col gap-2 p-6 border bg-white rounded-lg shadow-sm transition-shadow">
+              <div className="flex gap-4 items-center">
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/8/83/Telegram_2019_Logo.svg"
+                  alt="Telegram"
+                  className="w-12 h-12"
+                />
+                <div>
+                  <h3 className="text-lg font-medium text-gray-700">
+                    Telegram
+                  </h3>
+                  <p className="text-sm text-gray-500">Connect your account</p>
+                </div>
+              </div>
+              {/* add connected status later */}
+              {
+                // userId ?
+                <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
+                  <Input
+                    type="text"
+                    placeholder="Enter Telegram User ID"
+                    onChange={handleInputChange}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="default"
+                    className="ml-auto bg-blue-600 hover:bg-blue-700"
+                  >
+                    Connect
+                  </Button>
+                </form>
+                // : (
+                //   <div>Not connected</div>
+                // )
+              }
             </div>
           </div>
         </div>

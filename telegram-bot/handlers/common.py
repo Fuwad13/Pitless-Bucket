@@ -18,6 +18,6 @@ async def cmd_help(message: Message):
         /logout - Log out of the current session
         /files - List all available files
         /upload - Upload a new file
-        /download <filename> - Download a file by name
+        /download [filename] Download a file by name
         /help - Show this help message
     """)
