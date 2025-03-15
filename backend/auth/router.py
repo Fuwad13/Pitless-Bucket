@@ -253,3 +253,18 @@ async def get_uid_by_tgid(
     if not user:
         return {"error": "User not found"}
     return {"firebase_uid": user.firebase_uid}
+
+
+@auth_router.get("/get_linked_tgid", status_code=status.HTTP_200_OK)
+async def get_linked_tgid(
+    session: AsyncSession = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
+) -> dict:
+    """Get the linked Telegram ID of the user (if any)"""
+    stmt = select(User).where(User.firebase_uid == current_user.get("uid"))
+    user = (await session.exec(stmt)).first()
+    if not user:
+        raise HTTPException(
+            status_code=404, detail="User have not linked any telegram id yet"
+        )
+    return {"telegram_id": user.telegram_id}
