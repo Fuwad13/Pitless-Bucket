@@ -264,9 +264,7 @@ async def get_linked_tgid(
     stmt = select(User).where(User.firebase_uid == current_user.get("uid"))
     user = (await session.exec(stmt)).first()
     if not user:
-        raise HTTPException(
-            status_code=404, detail="User have not linked any telegram id yet"
-        )
+        return ""
     return {"telegram_id": user.telegram_id}
 
 
