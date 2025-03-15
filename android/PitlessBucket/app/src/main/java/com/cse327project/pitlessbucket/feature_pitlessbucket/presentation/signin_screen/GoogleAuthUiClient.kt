@@ -18,6 +18,7 @@ class GoogleAuthUiClient (
     private val oneTapClient: SignInClient
 ) {
     private val auth = Firebase.auth
+    private var _googleIdToken: String? = null
 
     suspend fun signIn(): IntentSender? {
         val result = try {
@@ -35,6 +36,7 @@ class GoogleAuthUiClient (
     suspend fun getSignInWithIntent( intent: Intent) : SignInResult {
         val credential = oneTapClient.getSignInCredentialFromIntent(intent)
         val googleIdToken = credential.googleIdToken
+        _googleIdToken = googleIdToken
         val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken, null)
         return try {
             val user = auth.signInWithCredential(googleCredentials).await().user
@@ -43,7 +45,8 @@ class GoogleAuthUiClient (
                     UserData(
                         userId = uid,
                         username = displayName,
-                        profilePictureUrl = photoUrl?.toString()
+                        profilePictureUrl = photoUrl?.toString(),
+                        idToken = googleIdToken
                     )
                 },
                 errorMessage = null
@@ -68,11 +71,32 @@ class GoogleAuthUiClient (
         }
     }
 
-    fun getSignedInUser(): UserData? = auth.currentUser?.run {
+//    fun getSignedInUser(): UserData? = auth.currentUser?.run {
+//        UserData(
+//            userId = uid,
+//            username = displayName,
+//            profilePictureUrl = photoUrl?.toString()
+//
+//        )
+//    }
+
+    fun getGoogleIdToken(): UserData? = auth.currentUser?.run{
         UserData(
             userId = uid,
             username = displayName,
-            profilePictureUrl = photoUrl?.toString()
+            profilePictureUrl = photoUrl?.toString(),
+            idToken = _googleIdToken
+        )
+    }
+
+    suspend fun getSignedInUser(): UserData? = auth.currentUser?.run {
+        val idTokenResult = getIdToken(true).await()
+        val idToken = idTokenResult?.token
+        UserData(
+            userId = uid,
+            username = displayName,
+            profilePictureUrl = photoUrl?.toString(),
+            idToken = idToken
         )
     }
 

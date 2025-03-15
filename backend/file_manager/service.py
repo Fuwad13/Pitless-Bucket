@@ -142,12 +142,13 @@ class FileManagerService:
             for chunk_path in chunk_paths:
                 os.remove(chunk_path)
 
-            return {
-                "message": "File uploaded successfully",
-                "filename": file.filename,
-                "total_chunks": len(chunk_paths),
-                "chunks": uploaded_chunks,
-            }
+            # return {
+            #     "message": "File uploaded successfully",
+            #     "filename": file.filename,
+            #     "total_chunks": len(chunk_paths),
+            #     "chunks": uploaded_chunks,
+            # }
+            return {"message": "File uploaded successfully", "filename": file.filename}
 
         except Exception as e:
             await session.rollback()

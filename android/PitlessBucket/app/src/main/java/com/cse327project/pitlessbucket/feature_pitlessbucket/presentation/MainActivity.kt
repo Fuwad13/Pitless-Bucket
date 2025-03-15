@@ -8,48 +8,42 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.graphics.toColorInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.cse327project.pitlessbucket.R
-import com.cse327project.pitlessbucket.ui.theme.PitlessBucketTheme
 import androidx.navigation.compose.rememberNavController
+import com.cse327project.pitlessbucket.R
+import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.dashboard.ApiService
+import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.dashboard.DashboardViewModel
+import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.dashboard.DashboardViewModelFactory
+import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.dashboard.components.DashboardScreen
+import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.file_upload.FileUploadViewModel
+import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.file_upload.FileUploadViewModelFactory
+import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.file_upload.components.FileUploadScreen
 import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.profile.ProfileScreen
 import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.signin_screen.GoogleAuthUiClient
 import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.signin_screen.SignInScreen
 import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.signin_screen.SignInViewModel
+import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.signin_screen.UserData
+import com.cse327project.pitlessbucket.ui.theme.PitlessBucketTheme
 import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 val fontFamily = FontFamily(
     Font(R.font.mplusrounded1c_thin, FontWeight.Thin),
@@ -71,12 +65,21 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private val apiService: ApiService by lazy {
+        val okHttpClient = OkHttpClient.Builder().build()
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://192.168.0.135:8000")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        retrofit.create(ApiService::class.java)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             PitlessBucketTheme {
-//                DashboardLayout()
                 Surface (
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -89,7 +92,7 @@ class MainActivity : ComponentActivity() {
 
                             LaunchedEffect(key1=Unit) {
                                 if(googleAuthUiClient.getSignedInUser() != null){
-                                    navController.navigate("profile")
+                                    navController.navigate("dashboard")
                                 }
                             }
 
@@ -115,7 +118,7 @@ class MainActivity : ComponentActivity() {
                                         Toast.LENGTH_LONG
                                     ).show()
 
-                                    navController.navigate("profile")
+                                    navController.navigate("dashboard")
                                     viewModel.resetState()
                                 }
                             }
@@ -136,7 +139,7 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(route="profile") {
                             ProfileScreen(
-                                userData = googleAuthUiClient.getSignedInUser(),
+                                userData = googleAuthUiClient.getGoogleIdToken(),
                                 onSignOut = {
                                     lifecycleScope.launch {
                                         googleAuthUiClient.signOut()
@@ -146,11 +149,40 @@ class MainActivity : ComponentActivity() {
                                             Toast.LENGTH_LONG
                                         ).show()
 
-                                        navController.popBackStack()
+                                        navController.navigate("sign_in")
                                     }
                                 }
                             )
                         }
+                        composable("dashboard") {
+                            val viewModel: DashboardViewModel = viewModel(
+                                factory = DashboardViewModelFactory(apiService)
+                            )
+
+                            val userData = remember { mutableStateOf<UserData?>(null) }
+
+                            LaunchedEffect(Unit) {
+                                userData.value = googleAuthUiClient.getSignedInUser()
+                                userData.value?.idToken?.let { idToken ->
+                                    viewModel.setIdToken(idToken)
+                                }
+                            }
+                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            DashboardScreen(userData = userData.value, state = state, navController=navController)
+                        }
+                        composable("file_upload") {
+                            val viewModel: FileUploadViewModel = viewModel(
+                                factory = FileUploadViewModelFactory(apiService)
+                            )
+                            val userData = remember { mutableStateOf<UserData?>(null) }
+                            LaunchedEffect(Unit) {
+                                userData.value = googleAuthUiClient.getSignedInUser()
+                            }
+                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            FileUploadScreen(userData = userData.value,state=state,navController=navController, viewModel = viewModel)
+                        }
+
+
                     }
                 }
             }
@@ -158,55 +190,5 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun DashboardLayout(modifier: Modifier = Modifier){
-    Column {
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .fillMaxHeight(.11f)
-                .background(Color("#3182ce".toColorInt()))
-        ) {
-            Row(
-                modifier = modifier
-                    .padding(top = 50.dp, start = 10.dp)
-                    .fillMaxWidth()
-            ) {
-                Text(
-                    text = "Pitless Bucket",
-                    fontFamily = fontFamily,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                    fontSize = 25.sp
-                )
-            }
-        }
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .fillMaxHeight(.04f)
-                .background(Color.White),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Your Files & Folders",
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                fontSize = 20.sp,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
 
-
-
-@Composable
-fun SearchBarField(modifier: Modifier = Modifier){
-    var text by remember {
-        mutableStateOf(TextFieldValue(""))
-    }
-
-
-}
 
