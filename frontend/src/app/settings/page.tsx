@@ -16,6 +16,7 @@ import { AuthContext } from "@/app/AuthContext";
 import { useRouter } from "next/navigation";
 import useAxiosPublic from "@/hooks/use-axios";
 import { Input } from "@/components/ui/input";
+import { disconnect } from "process";
 
 interface StorageStat {
   used: number;
@@ -35,6 +36,8 @@ const SettingsPage: React.FC = () => {
     total: 0,
   });
   const [telegramUserId, setTelegramUserId] = useState("");
+  const [tgConnected, setTgConnected] = useState(false);
+  const [connectedTgId, setConnectedTgId] = useState("");
   const hasFetchedStorageStat = useRef(false);
 
   useEffect(() => {
@@ -42,9 +45,10 @@ const SettingsPage: React.FC = () => {
       router.push("/login");
     } else if (!hasFetchedStorageStat.current) {
       fetchStorageStat();
+      getTgId();
       hasFetchedStorageStat.current = true;
     }
-  }, [currentUser, router]);
+  }, [currentUser, router, connectedTgId]);
 
   const fetchStorageStat = async () => {
     try {
@@ -57,16 +61,12 @@ const SettingsPage: React.FC = () => {
         }
       );
       setStorageStat(response.data);
-      console.log("Storage Stat:", response.data);
     } catch (error) {
       setError((error as Error).message);
       console.error("Error fetching storage stat:", error);
     } finally {
       setLoading(false);
     }
-  };
-  const HandleConnectTelegram = async () => {
-    console.log("connect TG!");
   };
 
   const handleConnectGoogleDrive = async () => {
@@ -177,7 +177,20 @@ const SettingsPage: React.FC = () => {
   const handleInputChange = (event) => {
     setTelegramUserId(event.target.value);
   };
+  const getTgId = async () => {
+    try {
+      const token = await getIdToken();
+      const response = await axiosPublic.get("/api/v1/auth/get_linked_tgid", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const tgId = response.data.telegram_id;
+      setConnectedTgId(tgId);
+    } catch (error) {
+      console.error("Error fetching TG ID:", error);
+    }
+  };
 
+  console.log(connectedTgId);
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const token = await getIdToken();
@@ -186,8 +199,26 @@ const SettingsPage: React.FC = () => {
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    console.log(response);
+    if (response.status == 200) {
+      setConnectedTgId(telegramUserId);
+    }
     console.log("Connecting to Telegram User ID:", telegramUserId);
+  };
+
+  const disconnectTg = async () => {
+    try {
+      const token = await getIdToken();
+      const response = await axiosPublic.delete(
+        "/api/v1/auth/unlink_telegram",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setConnectedTgId("");
+      console.log(response);
+    } catch (error) {
+      console.error("Error fetching TG ID:", error);
+    }
   };
 
   return (
@@ -316,12 +347,13 @@ const SettingsPage: React.FC = () => {
                   <h3 className="text-lg font-medium text-gray-700">
                     Telegram
                   </h3>
-                  <p className="text-sm text-gray-500">Connect your account</p>
+                  <p className="text-sm text-gray-500">
+                    {!connectedTgId ? "Connect your account" : "Connected"}
+                  </p>
                 </div>
               </div>
               {/* add connected status later */}
-              {
-                // telegramUserId ?
+              {!connectedTgId ? (
                 <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
                   <Input
                     type="text"
@@ -336,10 +368,21 @@ const SettingsPage: React.FC = () => {
                     Connect
                   </Button>
                 </form>
-                // : (
-                //   <div>Not connected</div>
-                // )
-              }
+              ) : (
+                <div className="flex gap-2 justify-between items-center">
+                  <div className="flex gap-2">
+                    <h1>Connected to Telegram ID:</h1>
+                    <p className="text-gray-600">{connectedTgId}</p>
+                  </div>
+                  <Button
+                    variant="default"
+                    className="ml-auto bg-blue-600 hover:bg-blue-700"
+                    onClick={disconnectTg}
+                  >
+                    Disconnect
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
