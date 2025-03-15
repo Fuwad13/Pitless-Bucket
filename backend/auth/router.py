@@ -268,3 +268,18 @@ async def get_linked_tgid(
             status_code=404, detail="User have not linked any telegram id yet"
         )
     return {"telegram_id": user.telegram_id}
+
+
+@auth_router.delete("/unlink_telegram", status_code=status.HTTP_200_OK)
+async def unlink_tg(
+    session: AsyncSession = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
+) -> dict:
+    """Unlink a telegram account from the user"""
+    stmt = select(User).where(User.firebase_uid == current_user.get("uid"))
+    user = (await session.exec(stmt)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.telegram_id = None
+    await session.commit()
+    return {"message": "Telegram account unlinked successfully"}
