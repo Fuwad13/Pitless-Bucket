@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.googleid)
 
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.coil.compose)
 
 
     testImplementation(libs.junit)
