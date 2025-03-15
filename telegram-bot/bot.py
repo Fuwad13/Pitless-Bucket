@@ -8,6 +8,8 @@ from handlers.pitless_bucket import pb_router
 from handlers.storageStatus import  storage_status_router
 from handlers.common import router as common_router
 from handlers.upload import upload_router
+from handlers.download import download_router
+
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -23,6 +25,7 @@ async def main() -> None:
         storage_status_router,
         common_router,
         upload_router,
+        download_router,
         pb_router,
     )
 

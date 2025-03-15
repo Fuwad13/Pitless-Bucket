@@ -14,8 +14,6 @@ async def cmd_help(message: Message):
         Available Commands:
         /start - Show welcome message
         /link - Link to your PitLess Bucket Account
-        /whoami - Check the current session
-        /logout - Log out of the current session
         /files - List all available files
         /upload - Upload a new file
         /download [filename] Download a file by name
