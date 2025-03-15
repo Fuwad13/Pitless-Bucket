@@ -1,4 +1,4 @@
-package com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.profile
+package com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.profile.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

@@ -1,9 +1,11 @@
-package com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.signin_screen
+package com.cse327project.pitlessbucket.feature_pitlessbucket.data.data_source.auth
 
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import com.cse327project.pitlessbucket.R
+import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.signin_screen.SignInResult
+import com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.signin_screen.UserData
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.BeginSignInRequest.GoogleIdTokenRequestOptions
 import com.google.android.gms.auth.api.identity.SignInClient
@@ -43,7 +45,8 @@ class GoogleAuthUiClient (
                     UserData(
                         userId = uid,
                         username = displayName,
-                        profilePictureUrl = photoUrl?.toString()
+                        profilePictureUrl = photoUrl?.toString(),
+                        idToken = googleIdToken
                     )
                 },
                 errorMessage = null
@@ -75,6 +78,7 @@ class GoogleAuthUiClient (
             profilePictureUrl = photoUrl?.toString()
         )
     }
+
 
     private fun buildSignInRequest(): BeginSignInRequest {
         return BeginSignInRequest.Builder()
