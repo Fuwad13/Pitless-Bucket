@@ -1,5 +1,6 @@
 package com.cse327project.pitlessbucket.feature_pitlessbucket.presentation.dashboard.components
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.VideoFile
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,12 +40,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -240,10 +247,12 @@ private fun FileItem(file: FileInfo) {
 //        formatter.format(file.updated_at)
 //    }
 
+    var showDialog by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* Handle click */ },
+            .clickable { showDialog=true },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -252,7 +261,6 @@ private fun FileItem(file: FileInfo) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // File type icon
             Icon(
                 imageVector = when {
                     file.content_type.startsWith("image/") -> Icons.Filled.Image
@@ -289,6 +297,12 @@ private fun FileItem(file: FileInfo) {
                         color = MaterialTheme.colorScheme.outline
                     )
 
+                    Text(
+                        text = file.extension,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+
 //                    Text(
 //                        text = formattedDate,
 //                        style = MaterialTheme.typography.bodySmall,
@@ -297,5 +311,28 @@ private fun FileItem(file: FileInfo) {
                 }
             }
         }
+    }
+    val context = LocalContext.current
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text(text = "Download File") },
+            text = { Text(text = "Do you want to download the file \"${file.file_name}\"?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDialog = false
+                        Toast.makeText(context, "Download will start soon...", Toast.LENGTH_LONG).show()
+                    }
+                ) {
+                    Text("Download")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }

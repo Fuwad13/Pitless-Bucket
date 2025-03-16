@@ -32,4 +32,10 @@ class DashboardViewModel(private val apiService: ApiService) : ViewModel() {
             }
         }
     }
+
+    fun downloadFile(idToken: String, fileId: String){
+        viewModelScope.launch {
+
+        }
+    }
 }

@@ -70,7 +70,6 @@ fun FileUploadScreen(
                     if (fileBytes != null) {
                         val requestBody = fileBytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
                         val filePart = MultipartBody.Part.createFormData("file", "filename", requestBody)
-                        // Use the idToken from userData if available
                         val idToken = userData?.idToken ?: ""
                         viewModel.uploadFile(idToken, filePart)
                     }
