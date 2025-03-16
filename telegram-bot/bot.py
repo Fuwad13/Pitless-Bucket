@@ -9,7 +9,7 @@ from handlers.storageStatus import  storage_status_router
 from handlers.common import router as common_router
 from handlers.upload import upload_router
 from handlers.download import download_router
-
+from handlers.unlink import logout_router
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -27,6 +27,7 @@ async def main() -> None:
         upload_router,
         download_router,
         pb_router,
+        logout_router,
     )
 
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
