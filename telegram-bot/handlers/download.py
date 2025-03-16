@@ -1,3 +1,4 @@
+import os
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -6,6 +7,7 @@ from aiogram.types import FSInputFile
 from handlers.pitless_bucket import BACKEND_API_URL, get_firebase_id_token
 
 download_router = Router()
+
 
 @download_router.message(Command("download"))
 async def cmd_download_file(message: Message) -> None:
@@ -33,17 +35,18 @@ async def cmd_download_file(message: Message) -> None:
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(
-                f"{BACKEND_API_URL}/file_manager/list_files",
-                headers=headers
+                f"{BACKEND_API_URL}/file_manager/list_files", headers=headers
             )
             if response.status_code != 200:
                 await message.answer(f"Failed to fetch file list: {response.text}")
                 return
 
-            file_list = response.json() 
+            file_list = response.json()
             file_info = next((f for f in file_list if f["file_name"] == filename), None)
             if not file_info:
-                await message.answer(f"File '{filename}' not found in the available files.")
+                await message.answer(
+                    f"File '{filename}' not found in the available files."
+                )
                 return
 
             file_uid = file_info.get("uid")
@@ -56,7 +59,7 @@ async def cmd_download_file(message: Message) -> None:
             response = await client.get(
                 f"{BACKEND_API_URL}/file_manager/download_file",
                 headers=headers,
-                params={"file_id": file_uid}
+                params={"file_id": file_uid},
             )
             if response.status_code != 200:
                 await message.answer(f"Failed to download file: {response.text}")
@@ -64,7 +67,9 @@ async def cmd_download_file(message: Message) -> None:
 
             content_disposition = response.headers.get("Content-Disposition", "")
             if "filename=" in content_disposition:
-                downloaded_filename = content_disposition.split("filename=")[-1].strip('"')
+                downloaded_filename = content_disposition.split("filename=")[-1].strip(
+                    '"'
+                )
             else:
                 downloaded_filename = file_info["file_name"]
 
@@ -73,13 +78,18 @@ async def cmd_download_file(message: Message) -> None:
 
             await message.answer_document(
                 document=FSInputFile(downloaded_filename),
-                caption=f"✅ File '{downloaded_filename}' downloaded successfully!"
+                caption=f"✅ File '{downloaded_filename}' downloaded successfully!",
             )
+            os.remove(downloaded_filename)
 
     except httpx.ReadTimeout:
-        await message.answer("⚠️ Download timed out. Please check your connection and try again.")
+        await message.answer(
+            "⚠️ Download timed out. Please check your connection and try again."
+        )
     except httpx.ConnectError:
-        await message.answer("❌ Failed to connect to the server. Is the backend running?")
+        await message.answer(
+            "❌ Failed to connect to the server. Is the backend running?"
+        )
     except Exception as e:
         await message.answer(f"NETWORK ERROR: {str(e)}")
         raise
