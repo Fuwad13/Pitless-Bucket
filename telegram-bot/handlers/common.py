@@ -14,8 +14,12 @@ async def cmd_help(message: Message):
         Available Commands:
         /start - Show welcome message
         /link - Link to your PitLess Bucket Account
+        /unlink - Unlink from your connected PitLess Bucket Account
+        /whoami - Check your linked account information.
+                         
         /files - List all available files
         /upload - Upload a new file
         /download [filename] Download a file by name
+                         
         /help - Show this help message
     """)
