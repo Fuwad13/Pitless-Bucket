@@ -52,7 +52,6 @@ class FileManagerService:
                 None, chunk_strat.split_file, temp_file_path
             )
             storage_providers = await self.get_storage_providers(session, firebase_uid)
-
             if len(storage_providers) == 0:
                 raise HTTPException(
                     status_code=400, detail="No storage providers linked"
@@ -68,16 +67,14 @@ class FileManagerService:
             session.add(file_)
             await session.commit()
             await session.refresh(file_)
-
             await self._persist_file_chunks(session, file_, uploaded_chunks)
-
             self._cleanup_temp_files(temp_file_path, chunk_paths)
 
             return {"message": "File uploaded successfully", "filename": file.filename}
 
         except Exception as e:
-            await session.rollback()
             logger.error(f"Error in upload_file: {e}")
+            await session.rollback()
             if "temp_file_path" in locals() and os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
             if "chunk_paths" in locals():
