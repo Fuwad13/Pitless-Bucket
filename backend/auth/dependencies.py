@@ -38,7 +38,7 @@ class FirebaseTokenBearer(HTTPBearer):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired Firebase token",
             )
-        logger.debug(f"Decoded Firebase token: {decoded_token}")
+        # logger.debug(f"Decoded Firebase token: {decoded_token}")
         return decoded_token
 
 
