@@ -219,7 +219,16 @@ class FileManagerService:
                     os.remove(chunk_path)
 
     async def delete_file(self, session: AsyncSession, file_id: str, firebase_uid: str):
-        """Delete a file uploaded by User"""
+        """
+        Delete a file from the User's storage (by file_id)
+        Args:
+            session (AsyncSession): Async database session
+            file_id (str): File ID
+            firebase_uid (str): Firebase UID of the User
+        Returns:
+            dict: Response message
+
+        """
         try:
             stmt = select(FileInfo).where(FileInfo.uid == file_id)
             result = (await session.exec(stmt)).first()
@@ -253,6 +262,16 @@ class FileManagerService:
     async def rename_file(
         self, session: AsyncSession, file_id: str, firebase_uid: str, new_name: str
     ):
+        """
+        Rename a file in the User's storage
+        Args:
+            session (AsyncSession): Async database session
+            file_id (str): File ID
+            firebase_uid (str): Firebase UID of the User
+            new_name (str): New name for the file
+        Returns:
+            dict: Response message
+        """
         try:
             stmt = select(FileInfo).where(FileInfo.uid == file_id)
             result = (await session.exec(stmt)).first()
@@ -271,6 +290,14 @@ class FileManagerService:
             raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
 
     async def list_files(self, session: AsyncSession, firebase_uid: str):
+        """
+        List all files in the User's storage
+        Args:
+            session (AsyncSession): Async database session
+            firebase_uid (str): Firebase UID of the User
+        Returns:
+            List[FileInfo]: List of FileInfo objects
+        """
         stmt = select(FileInfo).where(FileInfo.firebase_uid == firebase_uid)
         result = await session.exec(stmt)
         return result.all()
@@ -278,6 +305,15 @@ class FileManagerService:
     async def download_file(
         self, session: AsyncSession, file_id: str, firebase_uid: str
     ):
+        """
+        Download a file from the User's storage
+        Args:
+            session (AsyncSession): Async database session
+            file_id (str): File ID
+            firebase_uid (str): Firebase UID of the User
+        Returns:
+            FileResponse: FileResponse object
+        """
         try:
             stmt = select(FileInfo).where(FileInfo.uid == file_id)
             result = (await session.exec(stmt)).first()
@@ -351,6 +387,14 @@ class FileManagerService:
         pass
 
     async def get_storage_usage(self, session: AsyncSession, firebase_uid: str) -> Dict:
+        """
+        Get the storage usage of the User
+        Args:
+            session (AsyncSession): Async database session
+            firebase_uid (str): Firebase UID of the User
+        Returns:
+            Dict: Dictionary containing the storage usage details
+        """
         stmt = select(StorageProvider).where(
             StorageProvider.firebase_uid == firebase_uid
         )

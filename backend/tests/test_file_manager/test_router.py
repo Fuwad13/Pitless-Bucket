@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import Mock, patch
@@ -29,7 +29,7 @@ class TestFileManagerRouter:
                 "/api/v1/file_manager/upload_file",
                 files={"file": ("test.txt", f, "text/plain")},
             )
-        assert response.status_code == 201
+        assert response.status_code == status.HTTP_201_CREATED
         assert response.json()["file_name"] == "test.txt"
         mock_fm_service.upload_file.assert_called_once()
 
