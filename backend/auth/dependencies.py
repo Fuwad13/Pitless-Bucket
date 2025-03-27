@@ -12,7 +12,7 @@ FIREBASE_CLIENT_CREDS = {
     "type": "service_account",
     "project_id": Config.FIREBASE_PROJECT_ID,
     "private_key_id": Config.FIREBASE_PRIVATE_KEY_ID,
-    "private_key": Config.FIREBASE_PRIVATE_KEY,
+    "private_key": Config.FIREBASE_PRIVATE_KEY_B64.replace("\\n", "\n"),
     "client_email": Config.FIREBASE_CLIENT_EMAIL,
     "client_id": Config.FIREBASE_CLIENT_ID,
     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
