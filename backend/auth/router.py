@@ -60,7 +60,15 @@ flow = Flow.from_client_config(
 
 @auth_router.post("/register_user", status_code=status.HTTP_201_CREATED)
 async def register_user(req: dict, session: AsyncSession = Depends(get_session)):
-    """Register a user in database"""
+    """
+    Register a user in database
+    
+    Args:
+        req (dict): User details
+
+    Returns:
+        dict: User details 
+    """
     stmt = select(User).where(User.firebase_uid == req.get("firebase_uid"))
     existing_user = (await session.exec(stmt)).first()
     if existing_user:
