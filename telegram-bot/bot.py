@@ -1,10 +1,9 @@
 import asyncio
 import logging
-from os import getenv
 
 from handlers.echo import echo_router
 from handlers.start import start_router
-from handlers.pitless_bucket import pb_router
+# from handlers.pitless_bucket import pb_router
 from handlers.storageStatus import  storage_status_router
 from handlers.common import router as common_router
 from handlers.upload import upload_router
@@ -28,7 +27,7 @@ async def main() -> None:
         common_router,
         upload_router,
         download_router,
-        pb_router,
+        # pb_router,
         logout_router,
         whoami_router,
     )

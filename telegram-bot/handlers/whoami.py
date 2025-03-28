@@ -2,14 +2,12 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 import httpx
-from handlers.pitless_bucket import BACKEND_API_URL, get_firebase_id_token
-from dotenv import load_dotenv
-import os
+from config import Config
+from handlers.pitless_bucket.constants import BACKEND_API_URL
+from handlers.pitless_bucket.auth import get_firebase_id_token
 
-load_dotenv()
 whoami_router = Router()
 
-FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
 @whoami_router.message(Command("whoami"))
 async def cmd_whoami(message: Message) -> None:
     try:
@@ -29,7 +27,7 @@ async def cmd_whoami(message: Message) -> None:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.post(
                 "https://identitytoolkit.googleapis.com/v1/accounts:lookup",
-                params={"key": FIREBASE_API_KEY},
+                params={"key": Config.FIREBASE_API_KEY},
                 json={"idToken": id_token}
             )
 

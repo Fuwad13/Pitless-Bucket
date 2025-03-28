@@ -4,7 +4,8 @@ from aiogram.filters import Command
 from aiogram.types import Message
 import httpx
 from aiogram.types import FSInputFile
-from handlers.pitless_bucket import BACKEND_API_URL, get_firebase_id_token
+from handlers.pitless_bucket.constants import BACKEND_API_URL
+from handlers.pitless_bucket.auth import get_firebase_id_token
 
 download_router = Router()
 
