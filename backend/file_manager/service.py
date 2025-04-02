@@ -17,7 +17,7 @@ from backend.db.models import FileChunk, FileInfo, StorageProvider
 from backend.storage_provider.abstract_provider import AbstractStorageProvider
 from backend.log.logger import get_logger
 from backend.storage_provider.factory import get_provider
-from .schemas import FileInfoResponseModel
+from .schemas import UploadFileResponse
 
 logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
 
@@ -70,7 +70,8 @@ class FileManagerService:
             await self._persist_file_chunks(session, file_, uploaded_chunks)
             self._cleanup_temp_files(temp_file_path, chunk_paths)
 
-            return {"message": "File uploaded successfully", "filename": file.filename}
+            response = UploadFileResponse(**file_.model_dump())
+            return response
 
         except Exception as e:
             logger.error(f"Error in upload_file: {e}")

@@ -8,7 +8,7 @@ from backend.db.main import get_session
 from backend.log.logger import get_logger
 from .service import FileManagerService
 from backend.auth.dependencies import get_current_user
-from .schemas import FileInfoResponseModel
+from .schemas import UploadFileResponse
 
 
 logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
@@ -17,14 +17,15 @@ fm_router = APIRouter()
 fm_service = FileManagerService()
 
 
-@fm_router.post("/upload_file", status_code=status.HTTP_201_CREATED)
+@fm_router.post("/upload_file", status_code=status.HTTP_201_CREATED, response_model=UploadFileResponse)
 async def upload_file(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
     current_user: dict = Depends(get_current_user),
 ):
     """Upload a file to User's Storage Provider(s)"""
-    return await fm_service.upload_file(session, file, current_user.get("uid"))
+    response = await fm_service.upload_file(session, file, current_user.get("uid"))
+    return response
 
 
 @fm_router.get(

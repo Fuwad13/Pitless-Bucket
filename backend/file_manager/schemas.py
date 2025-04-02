@@ -4,9 +4,9 @@ from uuid import UUID
 from datetime import datetime
 
 
-class FileInfoResponseModel(BaseModel):
+class UploadFileResponse(BaseModel):
     uid: UUID
-    firebase_id: UUID
+    firebase_uid: str
     file_name: str
     content_type: str
     extension: str

@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/select";
 import useAxiosPublic from "../hooks/AxiosPublic";
 import { AuthContext } from "@/app/AuthContext";
-import { set } from "date-fns";
 
 interface FileUploadProps {
   refreshFiles: () => void;
@@ -128,28 +127,24 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
         }
       );
       console.log(response);
-      if (!response) {
-        throw new Error("Upload failed");
+      if (response.status === 201) {
+        toast.update(uploadToastId, {
+          render: `File${selectedFiles.length > 1 ? "s" : ""} uploaded successfully!`,
+          type: "success",
+          isLoading: false,
+          autoClose: 2000,
+        });
+        console.log("Upload successful:", response.data);
+        if (Array.isArray(response.data)) {
+          response.data.forEach((fileInfo) =>
+            console.log(`Uploaded: ${fileInfo.file_name}, UID: ${fileInfo.uid}`)
+          );
+        } else {
+          console.log(`Uploaded: ${response.data.file_name}, UID: ${response.data.uid}`);
+        }
+      } else {
+        throw new Error(`Unexpected status code: ${response.status}`);
       }
-
-      toast.update(uploadToastId, {
-        render: "File uploaded successfully!",
-        type: "success",
-        isLoading: false,
-        autoClose: 2000,
-      });
-
-      // console.log("Upload successful:", response.data);
-      // toast.success("File uploaded successfully!", {
-      //   position: "top-right",
-      //   autoClose: 2000,
-      //   hideProgressBar: false,
-      //   closeOnClick: false,
-      //   pauseOnHover: true,
-      //   draggable: true,
-      //   progress: undefined,
-      //   theme: "dark",
-      // });
     } catch (error) {
       console.error("Error uploading files:", error);
       toast.error("Failed to upload file", {
