@@ -2,8 +2,8 @@ from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from .pitless_bucket.auth import get_user
-from keyboards.reply.link_cmd import kb as link_cmd_kb
-from keyboards.inline import start_menu
+from views.keyboards.reply.link_cmd import kb as link_cmd_kb
+from views.keyboards.inline import start_menu
 
 start_router = Router()
 
@@ -16,7 +16,7 @@ async def command_start_handler(message: Message) -> None:
     firebase_uid = data.get("firebase_uid", None)
     if firebase_uid is not None:
         reply_text += (
-            "Your Pitless Bucket account is already linked. ✅\n\n"
+            "Your have linked your Pitless Bucket account. ✅\n\n"
             f"username: {data.get('username')}\n"
             f"email: {data.get('email')}\n\n"
         )

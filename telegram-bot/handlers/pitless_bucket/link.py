@@ -2,13 +2,24 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 import httpx
-from handlers.pitless_bucket.constants import BACKEND_API_URL
+from handlers.pitless_bucket.constants import BACKEND_API_URL, PB_SETTINGS
 from handlers.pitless_bucket.auth import get_firebase_id_token, get_user
 
-logout_router = Router()
+link_router = Router()
 
 
-@logout_router.message(Command("unlink"))
+@link_router.message(Command("link"))
+async def cmd_link_account(message: Message) -> None:
+    """
+    Command to link Pitless Bucket account to the bot
+    """
+    await message.answer(
+        f"Please go to this link and link your telegram id to your Pitless Bucket account\n{PB_SETTINGS}\nYour telegram id is:"
+    )
+    await message.answer(f"{message.from_user.id}")
+
+
+@link_router.message(Command("unlink"))
 async def cmd_logout(message: Message) -> None:
     try:
         telegram_id = message.from_user.id
