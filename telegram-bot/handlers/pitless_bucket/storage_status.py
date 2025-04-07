@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 import httpx
 from handlers.pitless_bucket.constants import BACKEND_API_URL
-from handlers.pitless_bucket.auth import get_firebase_id_token, get_firebase_uid
+from handlers.pitless_bucket.auth import get_firebase_id_token, get_user
 
 storage_status_router = Router()
 
@@ -14,7 +14,7 @@ async def cmd_storage_status(message: Message) -> None:
     Command to check Pitless Bucket storage usage
     """
     telegram_id = int(message.from_user.id)
-    data = await get_firebase_uid(telegram_id)
+    data = await get_user(telegram_id)
     firebase_uid = data.get("firebase_uid", None)
 
     if not firebase_uid:

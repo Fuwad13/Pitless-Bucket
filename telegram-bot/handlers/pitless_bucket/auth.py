@@ -32,15 +32,29 @@ async def get_firebase_id_token(uid: str) -> str:
         raise Exception("Token exchange failed: " + response.text)
 
 
-async def get_firebase_uid(telegram_id: int) -> Dict:
+async def get_user(telegram_id: int) -> Dict:
+    """
+    Get the Firebase UID associated with the given Telegram ID
+    """
     try:
         async with httpx.AsyncClient() as httpx_client:
 
             response = await httpx_client.get(
-                f"{BACKEND_API_URL}/auth/get_firebase_uid_by_tgid?tg_id={telegram_id}"
+                f"{BACKEND_API_URL}/auth/get_user_by_tgid?tg_id={telegram_id}"
             )
         data = response.json()
         return data
     except Exception as e:
         print(f"Error getting firebase uid: {e}")
         return {"firebase_uid": None}
+
+
+async def is_linked(telegram_id: int) -> bool:
+    """
+    Check if the telegram account is linked to a Pitless Bucket account
+    """
+    data = await get_user(telegram_id)
+    firebase_uid = data.get("firebase_uid", None)
+    if not firebase_uid:
+        return False
+    return True

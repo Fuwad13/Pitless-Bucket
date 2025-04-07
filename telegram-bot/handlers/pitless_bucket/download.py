@@ -5,7 +5,7 @@ from aiogram.types import Message
 import httpx
 from aiogram.types import FSInputFile
 from handlers.pitless_bucket.constants import BACKEND_API_URL
-from handlers.pitless_bucket.auth import get_firebase_id_token, get_firebase_uid
+from handlers.pitless_bucket.auth import get_firebase_id_token, get_user
 
 download_router = Router()
 
@@ -21,7 +21,7 @@ async def cmd_download_file(message: Message) -> None:
 
     try:
         telegram_id = message.from_user.id
-        data_ = await get_firebase_uid(telegram_id)
+        data_ = await get_user(telegram_id)
         firebase_uid = data_.get("firebase_uid", None)
         if not firebase_uid:
             await message.answer("Please link your account first using /link command.")

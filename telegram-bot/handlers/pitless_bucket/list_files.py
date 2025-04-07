@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 import httpx
 from handlers.pitless_bucket.constants import BACKEND_API_URL, PB_SETTINGS
-from handlers.pitless_bucket.auth import get_firebase_id_token, get_firebase_uid
+from handlers.pitless_bucket.auth import get_firebase_id_token, get_user
 
 list_files_router = Router()
 
@@ -31,7 +31,7 @@ async def cmd_list_files(message: Message) -> None:
     Command to list all files in the Pitless Bucket
     """
     telegram_id = int(message.from_user.id)
-    data = await get_firebase_uid(telegram_id)
+    data = await get_user(telegram_id)
     firebase_uid = data.get("firebase_uid", None)
     if not firebase_uid:
         await message.answer("Please link your account first")

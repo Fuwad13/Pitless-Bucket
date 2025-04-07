@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import Message, PhotoSize, Document, Video
 import httpx
 from handlers.pitless_bucket.constants import BACKEND_API_URL
-from handlers.pitless_bucket.auth import get_firebase_id_token, get_firebase_uid
+from handlers.pitless_bucket.auth import get_firebase_id_token, get_user
 import os
 
 upload_router = Router()
@@ -57,7 +57,7 @@ async def cmd_upload_file(message: Message) -> None:
             mime_type = file_to_upload.mime_type or "application/octet-stream"
 
         telegram_id = message.from_user.id
-        data = await get_firebase_uid(telegram_id)
+        data = await get_user(telegram_id)
         firebase_uid = data.get("firebase_uid")
         if not firebase_uid:
             await message.answer("Please link your account first using /link")
