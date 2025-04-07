@@ -3,32 +3,26 @@ from aiogram.filters import Command
 from aiogram.types import Message
 import httpx
 from config import Config
-from handlers.pitless_bucket.constants import BACKEND_API_URL
-from handlers.pitless_bucket.auth import get_firebase_id_token
+from handlers.pitless_bucket.auth import get_firebase_id_token, get_firebase_uid
 
 whoami_router = Router()
+
 
 @whoami_router.message(Command("whoami"))
 async def cmd_whoami(message: Message) -> None:
     try:
         telegram_id = message.from_user.id
 
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(
-                f"{BACKEND_API_URL}/auth/get_firebase_uid_by_tgid?tg_id={telegram_id}"
-            )
-            if response.status_code != 200 or "firebase_uid" not in response.json():
-                await message.answer("Not connected to any account.")
-                return
+        data = await get_firebase_uid(telegram_id)
 
-            firebase_uid = response.json().get("firebase_uid")
+        firebase_uid = data.get("firebase_uid")
 
         id_token = await get_firebase_id_token(firebase_uid)
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.post(
                 "https://identitytoolkit.googleapis.com/v1/accounts:lookup",
                 params={"key": Config.FIREBASE_API_KEY},
-                json={"idToken": id_token}
+                json={"idToken": id_token},
             )
 
             if response.status_code == 200:
@@ -39,12 +33,18 @@ async def cmd_whoami(message: Message) -> None:
                     f"✅ Connected Account:\nName: {user_name}\nEmail: {user_email}"
                 )
             else:
-                await message.answer(f"❌ Failed to fetch account details: {response.text}")
+                await message.answer(
+                    f"❌ Failed to fetch account details: {response.text}"
+                )
 
     except httpx.ReadTimeout:
-        await message.answer("⚠️ Request timed out. Please check your connection and try again.")
+        await message.answer(
+            "⚠️ Request timed out. Please check your connection and try again."
+        )
     except httpx.ConnectError:
-        await message.answer("❌ Failed to connect to the server. Is the backend running?")
+        await message.answer(
+            "❌ Failed to connect to the server. Is the backend running?"
+        )
     except Exception as e:
         await message.answer(f"NETWORK ERROR: {str(e)}")
         raise
