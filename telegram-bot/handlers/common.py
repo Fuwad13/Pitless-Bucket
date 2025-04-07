@@ -1,6 +1,7 @@
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
+from handlers.pitless_bucket.constants import HELP_TEXT
 
 router = Router()
 
@@ -10,16 +11,4 @@ async def cmd_start(message: Message):
 
 @router.message(Command("help"))
 async def cmd_help(message: Message):
-    await message.answer("""
-        Available Commands:
-        /start - Show welcome message
-        /link - Link to your PitLess Bucket Account
-        /unlink - Unlink from your connected PitLess Bucket Account
-        /whoami - Check your linked account information.
-                         
-        /files - List all available files
-        /upload - Upload a new file
-        /download [filename] Download a file by name
-                         
-        /help - Show this help message
-    """)
+    await message.answer(HELP_TEXT)

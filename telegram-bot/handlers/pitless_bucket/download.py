@@ -9,7 +9,7 @@ from handlers.pitless_bucket.auth import get_firebase_id_token, get_user
 
 download_router = Router()
 
-
+# TODO: Refactor this to handle download more gracefully
 @download_router.message(Command("download"))
 async def cmd_download_file(message: Message) -> None:
     args = message.text.split()[1:]

@@ -1,29 +1,20 @@
 from aiogram import Router
 from aiogram.filters import CommandStart
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 from .pitless_bucket.auth import get_user
-from views.keyboards.reply.link_cmd import kb as link_cmd_kb
-from views.keyboards.inline import start_menu
+from views import get_home_view
 
 start_router = Router()
 
 
 @start_router.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
+    """
+        Handle the start command.
+    """
 
-    reply_text = f"Hello, <b>{message.from_user.full_name}!</b>\nWelcome to <b>Pitless Bucket Telegram Bot 🤖</b>.\n\n"
     data = await get_user(message.from_user.id)
-    firebase_uid = data.get("firebase_uid", None)
-    if firebase_uid is not None:
-        reply_text += (
-            "Your have linked your Pitless Bucket account. ✅\n\n"
-            f"username: {data.get('username')}\n"
-            f"email: {data.get('email')}\n\n"
-        )
-        await message.answer(reply_text, reply_markup=start_menu)
-    else:
-        reply_text += (
-            "To use this bot, please link your <b>Pitless Bucket</b> account using the /link command.\n\n"
-            "You can also use the following commands:\n"
-        )
-        await message.answer(reply_text, reply_markup=link_cmd_kb)
+    name = message.from_user.full_name if message.from_user.full_name else "User"
+    text, markup, photo_path = await get_home_view(name=name, data=data)
+    photo = FSInputFile(photo_path, filename="home_pb.png")
+    await message.answer_photo(photo=photo,caption=text, reply_markup=markup)
