@@ -62,12 +62,12 @@ flow = Flow.from_client_config(
 async def register_user(req: dict, session: AsyncSession = Depends(get_session)):
     """
     Register a user in database
-    
+
     Args:
         req (dict): User details
 
     Returns:
-        dict: User details 
+        dict: User details
     """
     stmt = select(User).where(User.firebase_uid == req.get("firebase_uid"))
     existing_user = (await session.exec(stmt)).first()
@@ -251,8 +251,8 @@ async def link_tg(
     return {"message": "Telegram account linked successfully"}
 
 
-@auth_router.get("/get_firebase_uid_by_tgid", status_code=status.HTTP_200_OK)
-async def get_uid_by_tgid(
+@auth_router.get("/get_user_by_tgid", status_code=status.HTTP_200_OK)
+async def get_user_by_tgid(
     tg_id: int, session: AsyncSession = Depends(get_session)
 ) -> dict:
     """Get firebase_uid by Telegram ID"""
@@ -260,7 +260,7 @@ async def get_uid_by_tgid(
     user = (await session.exec(stmt)).first()
     if not user:
         return {"error": "User not found"}
-    return {"firebase_uid": user.firebase_uid}
+    return user.model_dump()
 
 
 @auth_router.get("/get_linked_tgid", status_code=status.HTTP_200_OK)
