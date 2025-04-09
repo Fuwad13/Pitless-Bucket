@@ -1,4 +1,5 @@
 import json
+import urllib.parse
 from pathlib import Path
 import time
 import uuid
@@ -144,13 +145,14 @@ async def auth_google_callback(
 def auth_dropbox(current_user: dict = Depends(get_current_user)) -> dict:
     """Returns the Dropbox OAuth2 authorization URL"""
     state = json.dumps({"user_id": str(current_user.get("uid"))})
+    encoded_state = urllib.parse.quote(state)
     dropbox_auth_url = (
         f"https://www.dropbox.com/oauth2/authorize"
         f"?client_id={Config.DROPBOX_APP_KEY}"
         f"&response_type=code"
         f"&token_access_type=offline"
         f"&redirect_uri=http://localhost:8000/api/v1/auth/dropbox/callback"
-        f"&state={state}"
+        f"&state={encoded_state}"
     )
     return {"dropbox_auth_url": dropbox_auth_url}
 

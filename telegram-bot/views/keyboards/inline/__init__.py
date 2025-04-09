@@ -14,6 +14,8 @@ from .buttons import (
     btn_files,
     btn_upload,
     btn_download,
+    btn_confirm_unlink,
+    btn_cancel_unlink,
 )
 
 about_menu = InlineKeyboardMarkup(
@@ -33,6 +35,7 @@ dashboard_menu = InlineKeyboardMarkup(
 
 file_list_menu = InlineKeyboardMarkup(
     inline_keyboard=[
+        [btn_dashboard],
         [btn_home, btn_settings, btn_about],
     ]
 )
@@ -63,6 +66,10 @@ settings_menu = InlineKeyboardMarkup(
         [btn_add_gdrive, btn_add_dropbox],
         [btn_added_storage, btn_storage_status],
         [btn_unlink_tg],
-        [btn_home,btn_help, btn_about],
+        [btn_home, btn_help, btn_about],
     ]
+)
+
+unlink_menu = InlineKeyboardMarkup(
+    inline_keyboard=[[btn_confirm_unlink, btn_cancel_unlink]]
 )

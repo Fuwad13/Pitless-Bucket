@@ -20,7 +20,7 @@ async def cmd_link_account(message: Message) -> None:
 
 
 @link_router.message(Command("unlink"))
-async def cmd_logout(message: Message) -> None:
+async def cmd_unlink(message: Message) -> None:
     try:
         telegram_id = message.from_user.id
 

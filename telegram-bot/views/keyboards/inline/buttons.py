@@ -28,3 +28,10 @@ btn_upload = InlineKeyboardButton(text="Upload a file", callback_data="inline:up
 btn_download = InlineKeyboardButton(
     text="Download a file", callback_data="inline:download"
 )
+
+btn_confirm_unlink = InlineKeyboardButton(
+    text="Confirm", callback_data="inline:confirm_unlink"
+)
+btn_cancel_unlink = InlineKeyboardButton(
+    text="Cancel", callback_data="inline:cancel_unlink"
+)

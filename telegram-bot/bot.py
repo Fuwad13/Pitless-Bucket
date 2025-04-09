@@ -4,9 +4,7 @@ import sys, signal
 
 from handlers.echo import echo_router
 from handlers.start import start_router
-from handlers.pitless_bucket.list_files import list_files_router
-from handlers.pitless_bucket.storage_status import storage_status_router
-from handlers.common import router as common_router
+from handlers.common import common_router
 from handlers.pitless_bucket import (
     callback_router,
     upload_router,
@@ -14,6 +12,8 @@ from handlers.pitless_bucket import (
     link_router,
     whoami_router,
     dashboard_router,
+    storage_status_router,
+    list_files_router,
 )
 
 from aiogram import Bot, Dispatcher
