@@ -1,7 +1,13 @@
 import asyncio
 from aiogram import Router
 from aiogram.types import CallbackQuery, InputMediaPhoto, FSInputFile
-from views import get_dashboard_view, get_home_view, get_help_view, get_about_view
+from views import (
+    get_dashboard_view,
+    get_home_view,
+    get_help_view,
+    get_about_view,
+    get_file_list_view,
+)
 from handlers.pitless_bucket.auth import get_user
 from handlers.pitless_bucket.constants import PB_SETTINGS, HELP_TEXT
 
@@ -81,5 +87,18 @@ async def handle_about_callback(callback_query: CallbackQuery):
     """
     await callback_query.answer("Naviagating to About...")
     text, markup, photo_path = await get_about_view()
+    media = InputMediaPhoto(media=FSInputFile(photo_path), caption=text)
+    await callback_query.message.edit_media(media=media, reply_markup=markup)
+
+
+@callback_router.callback_query(lambda cq: cq.data == "inline:files")
+async def handle_files_callback(callback_query: CallbackQuery):
+    """
+    Handle the callback query for the files button.
+    """
+    await callback_query.answer("Naviagating to My Files...")
+    telegram_id = int(callback_query.from_user.id)
+    data = await get_user(telegram_id)
+    text, markup, photo_path = await get_file_list_view(data=data)
     media = InputMediaPhoto(media=FSInputFile(photo_path), caption=text)
     await callback_query.message.edit_media(media=media, reply_markup=markup)
