@@ -1,7 +1,7 @@
 import asyncio
 from aiogram import Router
 from aiogram.types import CallbackQuery, InputMediaPhoto, FSInputFile
-from views import get_dashboard_view, get_home_view
+from views import get_dashboard_view, get_home_view, get_help_view, get_about_view
 from handlers.pitless_bucket.auth import get_user
 from handlers.pitless_bucket.constants import PB_SETTINGS, HELP_TEXT
 
@@ -48,6 +48,7 @@ async def handle_home_callback(callback_query: CallbackQuery):
     media = InputMediaPhoto(media=FSInputFile(photo_path), caption=text)
     await callback_query.message.edit_media(media=media, reply_markup=markup)
 
+
 @callback_router.callback_query(lambda cq: cq.data == "inline:link")
 async def handle_link_callback(callback_query: CallbackQuery):
     """
@@ -61,11 +62,24 @@ async def handle_link_callback(callback_query: CallbackQuery):
     await asyncio.sleep(2)
     await callback_query.message.delete()
 
+
 @callback_router.callback_query(lambda cq: cq.data == "inline:help")
 async def handle_help_callback(callback_query: CallbackQuery):
     """
     Handle the callback query for the help button.
     """
     await callback_query.answer("Naviagating to Help...")
+    text, markup, photo_path = await get_help_view()
+    media = InputMediaPhoto(media=FSInputFile(photo_path), caption=text)
+    await callback_query.message.edit_media(media=media, reply_markup=markup)
 
-    
+
+@callback_router.callback_query(lambda cq: cq.data == "inline:about")
+async def handle_about_callback(callback_query: CallbackQuery):
+    """
+    Handle the callback query for the about button.
+    """
+    await callback_query.answer("Naviagating to About...")
+    text, markup, photo_path = await get_about_view()
+    media = InputMediaPhoto(media=FSInputFile(photo_path), caption=text)
+    await callback_query.message.edit_media(media=media, reply_markup=markup)
