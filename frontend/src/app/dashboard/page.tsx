@@ -18,7 +18,7 @@ import RenameModal from "@/modals/RenameModal";
 
 interface FileType {
   uid: string;
-  user_id: string;
+  firebase_uid: string;
   file_name: string;
   content_type: string;
   extension: string;
@@ -34,7 +34,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const MySwal = withReactContent(Swal);
   const [filteredFiles, setFilteredFiles] = useState<FileType[]>([]);
-  const { currentUser, getIdToken } = useContext(AuthContext);
+  const { currentUser, getIdToken } = useContext(AuthContext)!;
   const [layoutMode, setLayoutMode] = useState<"card" | "table">("card");
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [fileToRename, setFileToRename] = useState<FileType | null>(null);
@@ -45,6 +45,11 @@ const Dashboard: React.FC = () => {
       router.push("/login");
       return;
     }
+    const test = async () => {
+      const response = await axiosPublic.get("/api/v1/file_manager/ping")
+      console.log("Ping response:", response.data); // for debugging
+    }
+    test()
     const fetchFiles = async () => {
       try {
         const token = await getIdToken();
@@ -160,7 +165,7 @@ const Dashboard: React.FC = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        setFiles((prevFiles) => prevFiles.filter((f) => f.uid !== file.uid));
+        setFiles((prevFiles) => prevFiles?.filter((f) => f.uid !== file.uid));
         toast.success("File deleted successfully!", {
           position: "top-right",
           autoClose: 3000,
@@ -194,7 +199,7 @@ const Dashboard: React.FC = () => {
 
   const handleSearch = (query: string) => {
     const lowerCaseQuery = query.toLowerCase();
-    const filtered = files.filter((file) =>
+    const filtered = files?.filter((file) =>
       file.file_name.toLowerCase().includes(lowerCaseQuery)
     );
     setFilteredFiles(filtered);

@@ -1,6 +1,9 @@
 import axios from "axios";
 const axiosPublic = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: "https://promoted-cardinal-handy.ngrok-free.app",
+  headers: {
+    "ngrok-skip-browser-warning": "69696"
+  }
 });
 const useAxiosPublic = () => {
   return axiosPublic;

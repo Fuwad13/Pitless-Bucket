@@ -16,7 +16,6 @@ import { AuthContext } from "@/app/AuthContext";
 import { useRouter } from "next/navigation";
 import useAxiosPublic from "@/hooks/use-axios";
 import { Input } from "@/components/ui/input";
-import { disconnect } from "process";
 
 interface StorageStat {
   used: number;
@@ -25,7 +24,7 @@ interface StorageStat {
 }
 
 const SettingsPage: React.FC = () => {
-  const { currentUser, getIdToken } = useContext(AuthContext);
+  const { currentUser, getIdToken } = useContext(AuthContext)!;
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(false);
   const axiosPublic = useAxiosPublic();
@@ -36,7 +35,7 @@ const SettingsPage: React.FC = () => {
     total: 0,
   });
   const [telegramUserId, setTelegramUserId] = useState("");
-  const [tgConnected, setTgConnected] = useState(false);
+  // const [tgConnected, setTgConnected] = useState(false);
   const [connectedTgId, setConnectedTgId] = useState("");
   const hasFetchedStorageStat = useRef(false);
 
@@ -174,7 +173,7 @@ const SettingsPage: React.FC = () => {
   };
 
   // telegram handle functions
-  const handleInputChange = (event) => {
+  const handleInputChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
     setTelegramUserId(event.target.value);
   };
   const getTgId = async () => {

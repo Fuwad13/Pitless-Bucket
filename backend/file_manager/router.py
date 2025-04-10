@@ -81,3 +81,8 @@ async def get_storage_usage(
     """Get Storage Usage of User"""
     usage = await fm_service.get_storage_usage(session, current_user.get("uid"))
     return usage
+
+@fm_router.get("/ping")
+async def ping():
+    """Ping the server"""
+    return {"message": "Pong"}

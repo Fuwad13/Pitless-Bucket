@@ -36,7 +36,7 @@ const RenameModal: React.FC<RenameModalProps> = ({
   );
   const [loading, setLoading] = useState(false);
   const axiosPublic = useAxiosPublic();
-  const { getIdToken } = useContext(AuthContext);
+  const { getIdToken } = useContext(AuthContext)!;
 
   const handleRename = async () => {
     if (!fileNameWithoutExtension.trim()) {
