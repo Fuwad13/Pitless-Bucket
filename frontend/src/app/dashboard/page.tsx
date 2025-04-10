@@ -286,10 +286,10 @@ const Dashboard: React.FC = () => {
             </div>
           ) : error ? (
             <p className="text-red-500">{error}</p>
-          ) : filteredFiles.length > 0 ? (
+          ) : Array.isArray(filteredFiles) && filteredFiles.length > 0 ? (
             layoutMode === "card" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredFiles.map((file) => (
+                {filteredFiles?.map((file) => (
                   <FileCard
                     key={file.uid}
                     file={file}
