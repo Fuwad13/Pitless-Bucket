@@ -5,7 +5,7 @@ import { useContext, useEffect } from "react";
 import { AuthContext } from "./AuthContext";
 
 const Home = () => {
-  const { currentUser } = useContext(AuthContext)!;
+  const { currentUser } = useContext(AuthContext);
   useEffect(() => {
     if (currentUser) {
       window.location.href = "/dashboard";
