@@ -18,7 +18,7 @@ import RenameModal from "@/modals/RenameModal";
 
 interface FileType {
   uid: string;
-  firebase_uid: string;
+  user_id: string;
   file_name: string;
   content_type: string;
   extension: string;
@@ -34,7 +34,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const MySwal = withReactContent(Swal);
   const [filteredFiles, setFilteredFiles] = useState<FileType[]>([]);
-  const { currentUser, getIdToken } = useContext(AuthContext)!;
+  const { currentUser, getIdToken } = useContext(AuthContext);
   const [layoutMode, setLayoutMode] = useState<"card" | "table">("card");
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [fileToRename, setFileToRename] = useState<FileType | null>(null);

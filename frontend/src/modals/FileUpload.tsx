@@ -40,7 +40,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ refreshFiles }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const axiosPublic = useAxiosPublic();
-  const { getIdToken } = useContext(AuthContext)!;
+  const { getIdToken } = useContext(AuthContext);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
