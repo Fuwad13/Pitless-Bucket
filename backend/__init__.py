@@ -16,7 +16,7 @@ logger = get_logger(__name__, Path(__file__).parent / "log" / "app.log")
 @asynccontextmanager
 async def life_span(app: FastAPI):
     logger.info("Server is starting......")
-    await init_db()
+    # await init_db() # uncomment this if there was a database schema change
     yield
     logger.info("Server is shutting down......")
 

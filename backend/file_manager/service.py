@@ -2,12 +2,13 @@ import asyncio
 import json
 import os
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 import uuid
 import tempfile
 from pathlib import Path
 
 import aiofiles
+from redis import asyncio as aioredis
 from fastapi import HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -290,18 +291,47 @@ class FileManagerService:
             logger.error(f"Error in rename_file: {e}")
             raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
 
-    async def list_files(self, session: AsyncSession, firebase_uid: str):
+    async def list_files(self, session: AsyncSession, redis_client : aioredis.Redis, firebase_uid: str):
         """
         List all files in the User's storage
         Args:
             session (AsyncSession): Async database session
+            redis_client (aioredis.Redis): Redis cache client
             firebase_uid (str): Firebase UID of the User
         Returns:
             List[FileInfo]: List of FileInfo objects
         """
+        cached = await self.get_cached_files(redis_client, firebase_uid)
+        if cached:
+            cached_files = json.loads(cached)
+            return [FileInfo(**file) for file in cached_files]
         stmt = select(FileInfo).where(FileInfo.firebase_uid == firebase_uid)
-        result = await session.exec(stmt)
-        return result.all()
+        result = (await session.exec(stmt)).all()
+        await self.set_cached_files(redis_client, firebase_uid, result)
+        return result
+    
+    async def get_cached_files(self, redis_client: aioredis.Redis, firebase_uid: str):
+        """
+        Get cached files from Redis
+        Args:
+            redis_client (aioredis.Redis): Redis cache client
+            firebase_uid (str): Firebase UID of the User
+        Returns:
+            Optional[List[FileInfo]]: List of cached FileInfo objects or None if not found
+        """
+        key = f"files:{firebase_uid}"
+        return await redis_client.get(key)
+    
+    async def set_cached_files(self, redis_client: aioredis.Redis, firebase_uid: str, files: List[FileInfo]):
+        """
+        Set cached files in Redis
+        Args:
+            redis_client (aioredis.Redis): Redis cache client
+            firebase_uid (str): Firebase UID of the User
+            files (List[FileInfo]): List of FileInfo objects to cache
+        """
+        key = f"files:{firebase_uid}"
+        await redis_client.set(key, json.dumps([file.model_dump(mode='json') for file in files]), ex=300)
 
     async def download_file(
         self, session: AsyncSession, file_id: str, firebase_uid: str

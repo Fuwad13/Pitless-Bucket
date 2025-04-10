@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     DROPBOX_APP_KEY: str
     DROPBOX_APP_SECRET: str
 
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_USERNAME: str
+    REDIS_PASSWORD: str
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @field_validator("FIREBASE_PRIVATE_KEY_B64", mode="before")

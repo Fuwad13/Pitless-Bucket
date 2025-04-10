@@ -3,11 +3,13 @@ from pathlib import Path
 
 from fastapi import APIRouter, status, Depends, UploadFile, File, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
+from redis import asyncio as aioredis
 
 from backend.db.main import get_session
 from backend.log.logger import get_logger
 from .service import FileManagerService
 from backend.auth.dependencies import get_current_user
+from .dependecies import get_redis
 from .schemas import UploadFileResponse
 
 
@@ -17,7 +19,11 @@ fm_router = APIRouter()
 fm_service = FileManagerService()
 
 
-@fm_router.post("/upload_file", status_code=status.HTTP_201_CREATED, response_model=UploadFileResponse)
+@fm_router.post(
+    "/upload_file",
+    status_code=status.HTTP_201_CREATED,
+    response_model=UploadFileResponse,
+)
 async def upload_file(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
@@ -35,9 +41,10 @@ async def upload_file(
 async def list_files(
     session: AsyncSession = Depends(get_session),
     current_user: dict = Depends(get_current_user),
+    redis_client: aioredis.Redis = Depends(get_redis),
 ):
     """List all files uploaded by User"""
-    return await fm_service.list_files(session, current_user.get("uid"))
+    return await fm_service.list_files(session, redis_client,current_user.get("uid"))
 
 
 @fm_router.delete("/delete_file")
@@ -82,7 +89,9 @@ async def get_storage_usage(
     usage = await fm_service.get_storage_usage(session, current_user.get("uid"))
     return usage
 
+
 @fm_router.get("/ping")
-async def ping():
+async def ping(cache: aioredis.Redis =Depends(get_redis)):
     """Ping the server"""
+    # await cache.set("ping", "pong", ex=10)
     return {"message": "Pong"}
