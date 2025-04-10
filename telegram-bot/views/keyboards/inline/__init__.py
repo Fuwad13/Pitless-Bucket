@@ -64,7 +64,7 @@ start_menu = InlineKeyboardMarkup(
 settings_menu = InlineKeyboardMarkup(
     inline_keyboard=[
         [btn_add_gdrive, btn_add_dropbox],
-        [btn_storage_status],
+        [btn_added_storage, btn_storage_status],
         [btn_unlink_tg],
         [btn_home, btn_help, btn_about],
     ]
