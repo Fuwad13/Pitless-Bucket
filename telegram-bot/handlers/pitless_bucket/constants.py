@@ -1,7 +1,7 @@
 from config import Config
 
-PB_SETTINGS = "http://localhost:3000/settings"
-BACKEND_API_URL = "http://localhost:8000/api/v1"
+PB_SETTINGS = "https://pitless-bucket.vercel.app/settings"
+BACKEND_API_URL = "https://promoted-cardinal-handy.ngrok-free.app/api/v1"
 
 FIREBASE_CLIENT_CREDS = {
     "type": "service_account",
