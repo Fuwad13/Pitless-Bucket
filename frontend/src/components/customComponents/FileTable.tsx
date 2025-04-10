@@ -5,11 +5,13 @@ import FileExtensioIcon from "@/misc/FileExtensioIcon";
 
 interface FileType {
   uid: string;
+  firebase_uid: string;
   file_name: string;
   content_type: string;
   extension: string;
   size: number;
   created_at: Date;
+  updated_at: Date;
 }
 
 interface FileTableProps {
@@ -24,7 +26,7 @@ interface FileTableProps {
     extension: string;
     uid: string;
   }) => void;
-  onEdit: (file: { file_name: string; extension: string; uid: string }) => void;
+  onEdit: (file: FileType) => void;
 }
 
 const FileTable: React.FC<FileTableProps> = ({
@@ -100,6 +102,11 @@ const FileTable: React.FC<FileTableProps> = ({
                       file_name: file.file_name,
                       extension: file.extension,
                       uid: file.uid,
+                      firebase_uid: file.firebase_uid,
+                      content_type: file.content_type,
+                      size: file.size,
+                      created_at: file.created_at,
+                      updated_at: file.updated_at,
                     })
                   }
                   className="text-green-600 hover:text-green-800"

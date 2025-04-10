@@ -1,6 +1,5 @@
 "use client";
 import ReactPlayer from "react-player";
-import { useRouter } from "next/navigation";
 import { useContext } from "react";
 import { AuthContext } from "@/app/AuthContext";
 import UnauthorizedPage from "@/components/customComponents/unauthorisedPage";
@@ -10,7 +9,7 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayer = ({ videoUrl }: VideoPlayerProps) => {
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser } = useContext(AuthContext)!;
   if (!currentUser) {
     return <UnauthorizedPage />;
   }

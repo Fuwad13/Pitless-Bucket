@@ -3,14 +3,14 @@ import { AuthContext } from "@/app/AuthContext";
 import React, { useContext, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+// import Image from "next/image";
 import { signOut } from "firebase/auth";
 import { getAuth } from "firebase/auth";
-import { LogOut, Omega } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { toast } from "react-toastify";
 
 const Navbar: React.FC = () => {
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser } = useContext(AuthContext)!;
   const auth = getAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();

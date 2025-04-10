@@ -4,20 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   MoreVertical,
   Trash2,
-  ImageIcon,
-  PlayIcon,
+  // ImageIcon,
+  // PlayIcon,
   DownloadIcon,
   FolderPen,
 } from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import FileExtensioIcon from "@/misc/FileExtensioIcon";
 import RenameModal from "@/modals/RenameModal";
 
 interface FileCardProps {
   file: {
     uid: string;
-    user_id: string;
+    firebase_uid: string;
     file_name: string;
     content_type: string;
     extension: string;
@@ -46,7 +46,7 @@ const FileCard: React.FC<FileCardProps> = ({
 }) => {
   // const allowedVideoExtensions = ["mp4", "webm", "mkv"];
   // const allowedImageExtensions = ["png", "jpg", "jpeg"];
-  const router = useRouter();
+  // const router = useRouter();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
 
