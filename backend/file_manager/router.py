@@ -91,6 +91,16 @@ async def get_storage_usage(
     usage = await fm_service.get_storage_usage(session, redis_client, current_user.get("uid"))
     return usage
 
+@fm_router.get("/storage_providers")
+async def get_storage_providers_info(
+    session: AsyncSession = Depends(get_session),
+    redis_client: aioredis.Redis = Depends(get_redis),
+    current_user: dict = Depends(get_current_user),
+):
+    """Get Storage Providers of User"""
+    providers = await fm_service.get_storage_providers_info(session, redis_client, current_user.get("uid"))
+    return providers
+
 
 @fm_router.get("/ping")
 async def ping(cache: aioredis.Redis =Depends(get_redis)):

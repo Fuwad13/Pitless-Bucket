@@ -128,6 +128,52 @@ class FileManagerService:
             )
             storage_providers.append((str(res.uid), storage_provider))
         return storage_providers
+    
+    async def get_storage_providers_info(self, session: AsyncSession, redis_client: aioredis.Redis, firebase_uid: str) -> Optional[List[StorageProvider]]:
+        """
+        Get the storage providers linked to the User
+        Args:
+            session (AsyncSession): Async database session
+            redis_client (aioredis.Redis): Redis cache client
+            firebase_uid (str): Firebase UID of the User
+        Returns:
+            List[StorageProvider]: List of StorageProvider objects
+        """
+        cached = await self.get_cached_storage_providers_info(redis_client, firebase_uid)
+        if cached:
+            cached_storage_providers = json.loads(cached)
+            return [StorageProvider(**sp) for sp in cached_storage_providers]
+
+        stmt = select(StorageProvider).where(
+            StorageProvider.firebase_uid == firebase_uid
+        )
+        results = await session.exec(stmt)
+        if not results:
+            return None
+        results = results.all()
+        await self.set_cached_storage_providers(redis_client, firebase_uid, results)
+        return results
+    
+    async def get_cached_storage_providers_info(self, redis_client: aioredis.Redis, firebase_uid: str):
+        """
+        Get cached storage providers info from Redis
+        Args:
+            redis_client (aioredis.Redis): Redis cache client
+            firebase_uid (str): Firebase UID of the User
+        """
+        key = f"sp_info:{firebase_uid}"
+        return await redis_client.get(key)
+    
+    async def set_cached_storage_providers(self, redis_client: aioredis.Redis, firebase_uid: str, storage_providers: List[StorageProvider]):
+        """
+        Set cached storage providers info in Redis
+        Args:
+            redis_client (aioredis.Redis): Redis cache client
+            firebase_uid (str): Firebase UID of the User
+            storage_providers (List[StorageProvider]): List of StorageProvider objects to cache
+        """
+        key = f"sp_info:{firebase_uid}"
+        await redis_client.set(key, json.dumps([sp.model_dump(mode='json') for sp in storage_providers]), ex=3600)
 
     async def _upload_chunks(
         self,
