@@ -18,7 +18,7 @@ from backend.db.models import FileChunk, FileInfo, StorageProvider
 from backend.storage_provider.abstract_provider import AbstractStorageProvider
 from backend.log.logger import get_logger
 from backend.storage_provider.factory import get_provider
-from .schemas import UploadFileResponse
+from .schemas import UploadFileResponse, StorageProviderInfo, FileInfoResponse
 
 logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
 
@@ -129,7 +129,7 @@ class FileManagerService:
             storage_providers.append((str(res.uid), storage_provider))
         return storage_providers
     
-    async def get_storage_providers_info(self, session: AsyncSession, redis_client: aioredis.Redis, firebase_uid: str) -> Optional[List[StorageProvider]]:
+    async def get_storage_providers_info(self, session: AsyncSession, redis_client: aioredis.Redis, firebase_uid: str) -> Optional[List[StorageProviderInfo]]:
         """
         Get the storage providers linked to the User
         Args:
@@ -137,12 +137,12 @@ class FileManagerService:
             redis_client (aioredis.Redis): Redis cache client
             firebase_uid (str): Firebase UID of the User
         Returns:
-            List[StorageProvider]: List of StorageProvider objects
+            List[StorageProviderInfo]: List of StorageProviderInfo objects
         """
         cached = await self.get_cached_storage_providers_info(redis_client, firebase_uid)
         if cached:
             cached_storage_providers = json.loads(cached)
-            return [StorageProvider(**sp) for sp in cached_storage_providers]
+            return [StorageProviderInfo(**sp) for sp in cached_storage_providers]
 
         stmt = select(StorageProvider).where(
             StorageProvider.firebase_uid == firebase_uid
@@ -151,8 +151,17 @@ class FileManagerService:
         if not results:
             return None
         results = results.all()
-        await self.set_cached_storage_providers(redis_client, firebase_uid, results)
-        return results
+        sp_info_results = [
+            StorageProviderInfo(
+                provider_name=res.provider_name,
+                email=res.email,
+                used_space=res.used_space,
+                available_space=res.available_space,
+            )
+            for res in results
+        ]
+        await self.set_cached_storage_providers(redis_client, firebase_uid, sp_info_results)
+        return sp_info_results
     
     async def get_cached_storage_providers_info(self, redis_client: aioredis.Redis, firebase_uid: str):
         """
@@ -164,7 +173,7 @@ class FileManagerService:
         key = f"sp_info:{firebase_uid}"
         return await redis_client.get(key)
     
-    async def set_cached_storage_providers(self, redis_client: aioredis.Redis, firebase_uid: str, storage_providers: List[StorageProvider]):
+    async def set_cached_storage_providers(self, redis_client: aioredis.Redis, firebase_uid: str, storage_providers: List[StorageProviderInfo]):
         """
         Set cached storage providers info in Redis
         Args:
@@ -340,7 +349,7 @@ class FileManagerService:
             logger.error(f"Error in rename_file: {e}")
             raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
 
-    async def list_files(self, session: AsyncSession, redis_client : aioredis.Redis, firebase_uid: str):
+    async def list_files(self, session: AsyncSession, redis_client : aioredis.Redis, firebase_uid: str) -> List[FileInfoResponse]:
         """
         List all files in the User's storage
         Args:
@@ -348,16 +357,17 @@ class FileManagerService:
             redis_client (aioredis.Redis): Redis cache client
             firebase_uid (str): Firebase UID of the User
         Returns:
-            List[FileInfo]: List of FileInfo objects
+            List[FileInfoResponse]: List of FileInfo objects
         """
         cached = await self.get_cached_files(redis_client, firebase_uid)
         if cached:
             cached_files = json.loads(cached)
-            return [FileInfo(**file) for file in cached_files]
+            return [FileInfoResponse(**file) for file in cached_files]
         stmt = select(FileInfo).where(FileInfo.firebase_uid == firebase_uid)
         result = (await session.exec(stmt)).all()
-        await self.set_cached_files(redis_client, firebase_uid, result)
-        return result
+        response = [FileInfoResponse(**file.model_dump(mode='json')) for file in result]
+        await self.set_cached_files(redis_client, firebase_uid, response)
+        return response
     
     async def get_cached_files(self, redis_client: aioredis.Redis, firebase_uid: str):
         """

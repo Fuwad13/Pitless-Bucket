@@ -1,5 +1,6 @@
 import uuid
 from pathlib import Path
+from typing import List
 
 from fastapi import APIRouter, status, Depends, UploadFile, File, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -10,7 +11,7 @@ from backend.log.logger import get_logger
 from .service import FileManagerService
 from backend.auth.dependencies import get_current_user
 from .dependecies import get_redis
-from .schemas import UploadFileResponse
+from .schemas import UploadFileResponse, StorageProviderInfo, FileInfoResponse
 
 
 logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
@@ -38,6 +39,7 @@ async def upload_file(
 @fm_router.get(
     "/list_files",
     status_code=status.HTTP_200_OK,
+    response_model=List[FileInfoResponse],
 )
 async def list_files(
     session: AsyncSession = Depends(get_session),
@@ -91,7 +93,7 @@ async def get_storage_usage(
     usage = await fm_service.get_storage_usage(session, redis_client, current_user.get("uid"))
     return usage
 
-@fm_router.get("/storage_providers")
+@fm_router.get("/storage_providers", status_code=status.HTTP_200_OK, response_model=List[StorageProviderInfo])
 async def get_storage_providers_info(
     session: AsyncSession = Depends(get_session),
     redis_client: aioredis.Redis = Depends(get_redis),
