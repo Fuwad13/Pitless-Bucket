@@ -22,6 +22,15 @@ interface StorageStat {
   available: number;
   total: number;
 }
+interface ConnectedStorage {
+  provider_name: string;
+  firebase_uid: string;
+  creds: string;
+  available_space: number;
+  uid: string;
+  email: string;
+  used_space: number;
+}
 
 const SettingsPage: React.FC = () => {
   const { currentUser, getIdToken } = useContext(AuthContext)!;
@@ -35,9 +44,14 @@ const SettingsPage: React.FC = () => {
     total: 0,
   });
   const [telegramUserId, setTelegramUserId] = useState("");
-  // const [tgConnected, setTgConnected] = useState(false);
   const [connectedTgId, setConnectedTgId] = useState("");
+
   const hasFetchedStorageStat = useRef(false);
+  const [connectedStorages, setConnectedStorages] = useState<
+    ConnectedStorage[]
+  >([]);
+
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -45,6 +59,7 @@ const SettingsPage: React.FC = () => {
     } else if (!hasFetchedStorageStat.current) {
       fetchStorageStat();
       getTgId();
+      fetchConnectedStorages();
       hasFetchedStorageStat.current = true;
     }
   }, [currentUser, router, connectedTgId]);
@@ -65,6 +80,24 @@ const SettingsPage: React.FC = () => {
       console.error("Error fetching storage stat:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchConnectedStorages = async () => {
+    try {
+      setLoading(true);
+      const token = await getIdToken();
+      const response = await axiosPublic.get(
+        "/api/v1/file_manager/storage_providers",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setConnectedStorages(response.data);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.log(error);
     }
   };
 
@@ -173,7 +206,9 @@ const SettingsPage: React.FC = () => {
   };
 
   // telegram handle functions
-  const handleInputChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
+  const handleInputChange = (event: {
+    target: { value: React.SetStateAction<string> };
+  }) => {
     setTelegramUserId(event.target.value);
   };
   const getTgId = async () => {
@@ -220,6 +255,10 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const visibleItems = showAll
+    ? connectedStorages
+    : connectedStorages.slice(0, 3);
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar for Large Screens */}
@@ -238,6 +277,16 @@ const SettingsPage: React.FC = () => {
             <Settings size={20} /> Settings
           </Link>
         </nav>
+        <div className="flex items-center gap-3">
+          <HardDrive className="text-blue-500" size={24} />
+          <div>
+            <h3 className="text-lg font-medium text-gray-700">Storage</h3>
+            <p className="text-sm text-gray-500">
+              {formatSize(storageStat.used)} of {formatSize(storageStat.total)}{" "}
+              used
+            </p>
+          </div>
+        </div>
       </aside>
 
       {/* Mobile Sidebar (Drawer) */}
@@ -335,7 +384,7 @@ const SettingsPage: React.FC = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Telegram */}
-            <div className="flex flex-col gap-2 p-6 border bg-white rounded-lg shadow-sm transition-shadow">
+            <div className="flex flex-col gap-2 p-6 bg-white rounded-lg shadow-md transition-shadow">
               <div className="flex gap-4 items-center">
                 <img
                   src="https://upload.wikimedia.org/wikipedia/commons/8/83/Telegram_2019_Logo.svg"
@@ -385,22 +434,18 @@ const SettingsPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Current Storage Section */}
-
+        {/* Current Storage Status */}
         {loading ? (
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
             <div className="flex flex-col-reverse items-center justify-center gap-2">
               <p>Loading Storage Usage</p>
               <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
             </div>
           </div>
-        ) : error ? (
-          <p className="text-red-500">{error}</p>
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Current Storage
+              Storage Status
             </h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -420,6 +465,90 @@ const SettingsPage: React.FC = () => {
                   Manage
                 </Button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Current Storage Providers */}
+
+        {loading ? (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <p className="text-gray-700">Loading Connected Storages</p>
+              <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+            </div>
+          </div>
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            {/* Total Count */}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Connected Storage Providers
+              </h2>
+              <p className="text-sm text-gray-500">
+                Total Connected Providers: {connectedStorages.length}
+              </p>
+            </div>
+
+            {/* List of Connected Storages */}
+            <div className="space-y-4">
+              {visibleItems.map((storage) => (
+                <div
+                  key={storage.email}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                >
+                  <div className="flex items-center gap-4">
+                    {storage.provider_name === "google_drive" ? (
+                      <>
+                        <img
+                          src="https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Drive_logo.png"
+                          alt="Google Drive Logo"
+                          className="w-8 h-8"
+                        />
+                        <div className="flex flex-col text-gray-500">
+                          <h3 className="text-lg font-medium text-gray-700">
+                            Google Drive
+                          </h3>
+                          <h3>Email: {storage.email}</h3>
+                        </div>
+                      </>
+                    ) : storage.provider_name === "dropbox" ? (
+                      <>
+                        <img
+                          src="dropbox.png"
+                          alt="Dropbox Logo"
+                          className="w-8 h-8"
+                        />
+                        <div className="flex flex-col text-gray-500">
+                          <h3 className="text-lg font-medium text-gray-700">
+                            Dropbox
+                          </h3>
+                          <h3>Email: {storage.email}</h3>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+
+              {/* Show More/Less Button */}
+              {connectedStorages.length > 3 && (
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="px-4 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  {showAll ? "Show Less" : "Show More"}
+                </button>
+              )}
+
+              {/* Fallback Message */}
+              {connectedStorages.length === 0 && (
+                <p className="text-gray-600 text-center">
+                  No storage providers connected
+                </p>
+              )}
             </div>
           </div>
         )}
