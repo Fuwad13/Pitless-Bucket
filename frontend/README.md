@@ -59,37 +59,37 @@ This project is built using modern web technologies:
 ## Screenshots
 
 <p align="center">
-  <img src="https://i.ibb.co.com/7JMvPzqY/pitless-index.png" alt="Pitlessbucket Landing Page" width="700">
+  <img src="./readme_images/pitless_index.png" alt="Pitlessbucket Landing Page" width="700">
   <br>
   <em>Landing Page</em>
 </p>
 
 <p align="center">
-  <img src="https://i.ibb.co.com/Y4FxPGb5/pitless-login.png" alt="Pitlessbucket Login Page" width="500">
+  <img src="./readme_images/pitless_login.png" alt="Pitlessbucket Login Page" width="500">
   <br>
   <em>Login Page</em>
 </p>
 
 <p align="center">
-  <img src="https://i.ibb.co.com/DHwfFqZ2/pitless-signup.png" alt="Pitlessbucket Signup Page" width="500">
+  <img src="./readme_images/pitless_signup.png" alt="Pitlessbucket Signup Page" width="500">
   <br>
   <em>Signup Page</em>
 </p>
 
 <p align="center">
-  <img src="https://i.ibb.co.com/Y7JHCjFC/pitless-dashboard.png" alt="Pitlessbucket Dashboard File View" width="700">
+  <img src="./readme_images/pitless_dashboard.png" alt="Pitlessbucket Dashboard File View" width="700">
   <br>
   <em>Main Dashboard / File View</em>
 </p>
 
 <p align="center">
-  <img src="https://i.ibb.co.com/39Q9RNQp/pitless-upload-modal.png" alt="Pitlessbucket File Upload Modal" width="500">
+  <img src="./readme_images/pitless_upload_modal.png" alt="Pitlessbucket File Upload Modal" width="500">
   <br>
   <em>File Upload Modal</em>
 </p>
 
 <p align="center">
-  <img src="https://i.ibb.co.com/KpQPfZxs/pitless-settings.png" alt="Pitlessbucket Settings Page" width="700">
+  <img src="./readme_images/pitless_settings.png" alt="Pitlessbucket Settings Page" width="700">
   <br>
   <em>User Settings Page</em>
 </p>
