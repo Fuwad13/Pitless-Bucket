@@ -347,3 +347,36 @@ async def handle_download_callback(callback_query: CallbackQuery):
     )
     await callback_query.message.answer(text=text)
 
+@callback_router.callback_query(lambda cq: cq.data == "inline:added_storage")
+async def handle_added_storage_callback(callback_query: CallbackQuery):
+    """
+    Handle the callback query for the added storage button.
+    """
+    telegram_id = int(callback_query.from_user.id)
+    data = await get_user(telegram_id)
+    firebase_uid = data.get("firebase_uid", None)
+    if not firebase_uid:
+        reply_text = f"Hello, <b>{callback_query.from_user.full_name}!</b>\nWelcome to <b>Pitless Bucket Telegram Bot 🤖</b>.\n\n"
+        reply_text += "To use this bot, please link your <b>Pitless Bucket</b> account using the /link command.\n\n"
+        await callback_query.answer("Please link your account first")
+        await callback_query.message.answer(text=reply_text)
+        await callback_query.message.delete()
+        return
+    await callback_query.answer("Getting storage provider info...")
+    id_token = await get_firebase_id_token(firebase_uid)
+    async with httpx.AsyncClient(timeout=10.0) as httpx_client:
+        response = await httpx_client.get(
+            f"{BACKEND_API_URL}/file_manager/storage_providers", headers={"Authorization": f"Bearer {id_token}"}
+        )
+
+    text = "Storage Providers:\n\n"
+    if response.status_code == 200:
+        storage_data = response.json()
+        for provider in storage_data:
+            text += f"Provider: {provider.get('provider_name')}\nEmail: {provider.get("email")}\n\n"
+        if len(storage_data) == 0:
+            text += "No storage providers found.\n\n"
+    else:
+        text = "Something went wrong, please try again later.\n\n"
+    await callback_query.message.answer(text=text)
+

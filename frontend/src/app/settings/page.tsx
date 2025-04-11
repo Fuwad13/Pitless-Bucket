@@ -435,7 +435,7 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
         {/* Current Storage Status */}
-        {loading ? (
+        {/* {loading ? (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
             <div className="flex flex-col-reverse items-center justify-center gap-2">
               <p>Loading Storage Usage</p>
@@ -467,7 +467,7 @@ const SettingsPage: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Current Storage Providers */}
 
