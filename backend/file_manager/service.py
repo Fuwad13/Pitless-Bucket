@@ -278,7 +278,7 @@ class FileManagerService:
                 if os.path.exists(chunk_path):
                     os.remove(chunk_path)
 
-    async def delete_file(self, session: AsyncSession, file_id: str, firebase_uid: str):
+    async def delete_file(self, session: AsyncSession, redis_client: aioredis.Redis, file_id: str, firebase_uid: str):
         """
         Delete a file from the User's storage (by file_id)
         Args:
@@ -312,6 +312,8 @@ class FileManagerService:
                 await asyncio.to_thread(provider.delete_chunk, chunk.provider_file_id)
             await session.delete(result)
             await session.commit()
+            await redis_client.delete(f"files:{firebase_uid}")
+            await redis_client.delete(f"storage_usage:{firebase_uid}")
             return {"message": f"{result.file_name} deleted successfully"}
 
         except Exception as e:

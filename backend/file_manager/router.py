@@ -54,10 +54,11 @@ async def list_files(
 async def delete_file(
     file_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
+    redis_client: aioredis.Redis = Depends(get_redis),
     current_user: dict = Depends(get_current_user),
 ):
     """Delete a file uploaded by User"""
-    return await fm_service.delete_file(session, file_id, current_user.get("uid"))
+    return await fm_service.delete_file(session, redis_client, file_id, current_user.get("uid"))
 
 
 @fm_router.get("/download_file")
