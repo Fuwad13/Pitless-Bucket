@@ -5,6 +5,7 @@ import time
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from redis import asyncio as aioredis
 
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
@@ -14,6 +15,7 @@ import httpx
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, update
 
+from backend.file_manager.dependecies import get_redis
 from backend.log.logger import get_logger
 from backend.db.main import get_session
 from backend.config import Config
@@ -242,6 +244,7 @@ async def link_tg(
     tg_id: int,
     session: AsyncSession = Depends(get_session),
     current_user: dict = Depends(get_current_user),
+    redis_client: aioredis.Redis = Depends(get_redis),
 ) -> dict:
     """Link a telegram account to the user"""
     stmt = select(User).where(User.firebase_uid == current_user.get("uid"))
@@ -250,19 +253,49 @@ async def link_tg(
         raise HTTPException(status_code=404, detail="User not found")
     user.telegram_id = tg_id
     await session.commit()
+    await redis_client.set(
+        f"user_by_tgid:{tg_id}", json.dumps(user.model_dump(mode="json")), ex=600
+    )
     return {"message": "Telegram account linked successfully"}
 
 
 @auth_router.get("/get_user_by_tgid", status_code=status.HTTP_200_OK)
 async def get_user_by_tgid(
-    tg_id: int, session: AsyncSession = Depends(get_session)
+    tg_id: int,
+    session: AsyncSession = Depends(get_session),
+    redis_client: aioredis.Redis = Depends(get_redis),
 ) -> dict:
     """Get firebase_uid by Telegram ID"""
+    cached_user = await redis_client.get(f"user_by_tgid:{tg_id}")
+    if cached_user:
+        return json.loads(cached_user)
     stmt = select(User).where(User.telegram_id == tg_id)
     user = (await session.exec(stmt)).first()
     if not user:
-        return {"error": "User not found"}
+        response = {"error": "User not found"}
+        await redis_client.set(f"user_by_tgid:{tg_id}", json.dumps(response), ex=300)
+        return response
+    await redis_client.set(
+        f"user_by_tgid:{tg_id}", json.dumps(user.model_dump(mode="json")), ex=600
+    )
     return user.model_dump()
+
+
+@auth_router.delete("/unlink_telegram", status_code=status.HTTP_200_OK)
+async def unlink_tg(
+    session: AsyncSession = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
+    redis_client: aioredis.Redis = Depends(get_redis),
+) -> dict:
+    """Unlink a telegram account from the user"""
+    stmt = select(User).where(User.firebase_uid == current_user.get("uid"))
+    user = (await session.exec(stmt)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await redis_client.delete(f"user_by_tgid:{user.telegram_id}")
+    user.telegram_id = None
+    await session.commit()
+    return {"message": "Telegram account unlinked successfully"}
 
 
 @auth_router.get("/get_linked_tgid", status_code=status.HTTP_200_OK)
@@ -276,18 +309,3 @@ async def get_linked_tgid(
     if not user:
         return ""
     return {"telegram_id": user.telegram_id}
-
-
-@auth_router.delete("/unlink_telegram", status_code=status.HTTP_200_OK)
-async def unlink_tg(
-    session: AsyncSession = Depends(get_session),
-    current_user: dict = Depends(get_current_user),
-) -> dict:
-    """Unlink a telegram account from the user"""
-    stmt = select(User).where(User.firebase_uid == current_user.get("uid"))
-    user = (await session.exec(stmt)).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    user.telegram_id = None
-    await session.commit()
-    return {"message": "Telegram account unlinked successfully"}

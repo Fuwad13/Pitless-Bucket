@@ -31,12 +31,13 @@ CHUNK_SIZE = 1024 * 1024 * 5
 class FileManagerService:
 
     async def upload_file(
-        self, session: AsyncSession, file: UploadFile, firebase_uid: str
-    ):
+        self, session: AsyncSession, redis_client: aioredis.Redis, file: UploadFile, firebase_uid: str
+    ) -> UploadFileResponse:
         """
         Upload a file to the User's storage
         Args:
             session (AsyncSession): Async database session
+            redis_client (aioredis.Redis): Redis cache client
             file (UploadFile): File to be uploaded
             firebase_uid (str): Firebase UID of the User
         Returns:
@@ -68,6 +69,8 @@ class FileManagerService:
             session.add(file_)
             await session.commit()
             await session.refresh(file_)
+            await redis_client.delete(f"files:{firebase_uid}")
+            await redis_client.delete(f"storage_usage:{firebase_uid}")
             await self._persist_file_chunks(session, file_, uploaded_chunks)
             self._cleanup_temp_files(temp_file_path, chunk_paths)
 
@@ -331,7 +334,7 @@ class FileManagerService:
             files (List[FileInfo]): List of FileInfo objects to cache
         """
         key = f"files:{firebase_uid}"
-        await redis_client.set(key, json.dumps([file.model_dump(mode='json') for file in files]), ex=300)
+        await redis_client.set(key, json.dumps([file.model_dump(mode='json') for file in files]), ex=600)
 
     async def download_file(
         self, session: AsyncSession, file_id: str, firebase_uid: str
@@ -417,7 +420,7 @@ class FileManagerService:
     ):
         pass
 
-    async def get_storage_usage(self, session: AsyncSession, firebase_uid: str) -> Dict:
+    async def get_storage_usage(self, session: AsyncSession, redis_client: aioredis.Redis, firebase_uid: str) -> Dict:
         """
         Get the storage usage of the User
         Args:
@@ -426,6 +429,10 @@ class FileManagerService:
         Returns:
             Dict: Dictionary containing the storage usage details
         """
+        cached = await self.get_cached_storage_usage(redis_client, firebase_uid)
+        if cached:
+            return json.loads(cached)
+        
         stmt = select(StorageProvider).where(
             StorageProvider.firebase_uid == firebase_uid
         )
@@ -445,7 +452,29 @@ class FileManagerService:
             usage["used"] += stat_dict["used"]
             usage["available"] += stat_dict["available"]
             usage["total"] += stat_dict["total"]
+        await self.set_cached_storage_usage(redis_client, firebase_uid, usage)
         return usage
+    
+    async def get_cached_storage_usage(self, redis_client: aioredis.Redis, firebase_uid: str):
+        """
+        Get cached storage usage from Redis
+        Args:
+            redis_client (aioredis.Redis): Redis cache client
+            firebase_uid (str): Firebase UID of the User
+        """
+        key = f"storage_usage:{firebase_uid}"
+        return await redis_client.get(key)
+    
+    async def set_cached_storage_usage(self, redis_client: aioredis.Redis, firebase_uid: str, usage: Dict):
+        """
+        Set cached storage usage in Redis
+        Args:
+            redis_client (aioredis.Redis): Redis cache client
+            firebase_uid (str): Firebase UID of the User
+            usage (Dict): Dictionary containing the storage usage details
+        """
+        key = f"storage_usage:{firebase_uid}"
+        await redis_client.set(key, json.dumps(usage), ex=600)
 
     async def sync_storage_stats(self, session: AsyncSession, firebase_uid: str):
         pass

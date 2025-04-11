@@ -27,10 +27,11 @@ fm_service = FileManagerService()
 async def upload_file(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
+    redis_client: aioredis.Redis = Depends(get_redis),
     current_user: dict = Depends(get_current_user),
 ):
     """Upload a file to User's Storage Provider(s)"""
-    response = await fm_service.upload_file(session, file, current_user.get("uid"))
+    response = await fm_service.upload_file(session, redis_client, file, current_user.get("uid"))
     return response
 
 
@@ -83,10 +84,11 @@ async def rename_file(
 @fm_router.get("/storage_usage")
 async def get_storage_usage(
     session: AsyncSession = Depends(get_session),
+    redis_client: aioredis.Redis = Depends(get_redis),
     current_user: dict = Depends(get_current_user),
 ):
     """Get Storage Usage of User"""
-    usage = await fm_service.get_storage_usage(session, current_user.get("uid"))
+    usage = await fm_service.get_storage_usage(session, redis_client, current_user.get("uid"))
     return usage
 
 
