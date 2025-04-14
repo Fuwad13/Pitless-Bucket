@@ -4,6 +4,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END
 
+from .llm import get_model
+
 
 class ContentSummary(BaseModel):
     file_content_keywords: List[str] = Field(
@@ -33,7 +35,7 @@ def generate_summary(state: State):
     """
     Generate the summary of the file
     """
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+    llm = get_model(model_name="gemini-2.0-flash")
     llm = llm.with_structured_output(ContentSummary)
     system_prompt = """
 System Prompt for Pitless Bucket Summary Generation

@@ -4,6 +4,8 @@ from pydantic import field_validator
 
 
 class Settings(BaseSettings):
+    BACKEND_URL: str = "https://promoted-cardinal-handy.ngrok-free.app"
+    FRONTEND_URL: str = "https://pitless-bucket.vercel.app"
     DATABASE_URL: str
     WEB_CLIENT_ID: str
     WEB_CLIENT_SECRET: str

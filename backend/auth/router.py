@@ -48,14 +48,15 @@ GOOGLE_CLIENT_SECRETS_WEB = {
         "token_uri": "https://oauth2.googleapis.com/token",
         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
         "client_secret": Config.WEB_CLIENT_SECRET,
-        "redirect_uris": ["http://localhost:8000/api/v1/auth/google/callback"],
+        "redirect_uris": ["http://localhost:8000/api/v1/auth/google/callback", 
+                          f"{Config.BACKEND_URL}/api/v1/auth/google/callback"],
     }
 }
 
 flow = Flow.from_client_config(
     GOOGLE_CLIENT_SECRETS_WEB,
     scopes=GOOGLE_DRIVE_SCOPES,
-    redirect_uri="http://localhost:8000/api/v1/auth/google/callback",
+    redirect_uri=f"{Config.BACKEND_URL}/api/v1/auth/google/callback",
     autogenerate_code_verifier=True,
     code_verifier=None,
 )
@@ -153,7 +154,7 @@ def auth_dropbox(current_user: dict = Depends(get_current_user)) -> dict:
         f"?client_id={Config.DROPBOX_APP_KEY}"
         f"&response_type=code"
         f"&token_access_type=offline"
-        f"&redirect_uri=http://localhost:8000/api/v1/auth/dropbox/callback"
+        f"&redirect_uri={Config.BACKEND_URL}/api/v1/auth/dropbox/callback"
         f"&state={encoded_state}"
     )
     return {"dropbox_auth_url": dropbox_auth_url}
@@ -174,7 +175,7 @@ async def auth_dropbox_callback(
             "grant_type": "authorization_code",
             "client_id": Config.DROPBOX_APP_KEY,
             "client_secret": Config.DROPBOX_APP_SECRET,
-            "redirect_uri": "http://localhost:8000/api/v1/auth/dropbox/callback",
+            "redirect_uri": f"{Config.BACKEND_URL}/api/v1/auth/dropbox/callback",
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         async with httpx.AsyncClient() as client:
