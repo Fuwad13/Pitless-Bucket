@@ -1,11 +1,11 @@
 import os
+
+import httpx
 from aiogram import Router
 from aiogram.filters import Command
-from aiogram.types import Message
-import httpx
-from aiogram.types import FSInputFile
-from handlers.pitless_bucket.constants import BACKEND_API_URL
+from aiogram.types import FSInputFile, Message
 from handlers.pitless_bucket.auth import get_firebase_id_token, get_user
+from handlers.pitless_bucket.constants import BACKEND_API_URL
 
 download_router = Router()
 

@@ -1,8 +1,9 @@
 from aiogram import Router
 from aiogram.filters import CommandStart
-from aiogram.types import Message, FSInputFile
-from .pitless_bucket.auth import get_user
+from aiogram.types import FSInputFile, Message
 from views import get_home_view
+
+from .pitless_bucket.auth import get_user
 
 start_router = Router()
 

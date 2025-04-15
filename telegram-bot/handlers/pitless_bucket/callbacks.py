@@ -1,18 +1,19 @@
 import asyncio
+
+import httpx
 from aiogram import Router
-from aiogram.types import CallbackQuery, InputMediaPhoto, FSInputFile
+from aiogram.types import CallbackQuery, FSInputFile, InputMediaPhoto
+from handlers.pitless_bucket.auth import get_firebase_id_token, get_user
+from handlers.pitless_bucket.constants import BACKEND_API_URL, PB_SETTINGS
 from views import (
-    get_dashboard_view,
-    get_home_view,
-    get_help_view,
     get_about_view,
+    get_dashboard_view,
     get_file_list_view,
+    get_help_view,
+    get_home_view,
     get_settings_view,
     get_unlink_view,
 )
-import httpx
-from handlers.pitless_bucket.auth import get_user, get_firebase_id_token
-from handlers.pitless_bucket.constants import PB_SETTINGS, BACKEND_API_URL
 
 callback_router = Router()
 
@@ -248,10 +249,11 @@ async def handle_cancel_unlink(callback_query: CallbackQuery):
     media = InputMediaPhoto(media=FSInputFile(photo_path), caption=text)
     await callback_query.message.edit_media(media=media, reply_markup=markup)
 
+
 @callback_router.callback_query(lambda cq: cq.data == "inline:storage_status")
 async def handle_storage_status(callback_query: CallbackQuery):
     """
-        Handle the callback query for the storage status button.
+    Handle the callback query for the storage status button.
     """
     telegram_id = int(callback_query.from_user.id)
     data = await get_user(telegram_id)
@@ -272,6 +274,7 @@ async def handle_storage_status(callback_query: CallbackQuery):
         )
         storage_data = response.json()
     if response.status_code == 200:
+
         def convert_bytes(size_bytes):
             units = ["B", "KB", "MB", "GB", "TB"]
             unit_index = 0
@@ -301,7 +304,7 @@ async def handle_storage_status(callback_query: CallbackQuery):
         await callback_query.message.answer(text=text)
 
 
-# TODO: Change bot upload and download 
+# TODO: Change bot upload and download
 @callback_router.callback_query(lambda cq: cq.data == "inline:upload")
 async def handle_upload_callback(callback_query: CallbackQuery):
     """
@@ -325,6 +328,7 @@ async def handle_upload_callback(callback_query: CallbackQuery):
     )
     await callback_query.message.answer(text=text)
 
+
 @callback_router.callback_query(lambda cq: cq.data == "inline:download")
 async def handle_download_callback(callback_query: CallbackQuery):
     """
@@ -347,6 +351,7 @@ async def handle_download_callback(callback_query: CallbackQuery):
     )
     await callback_query.message.answer(text=text)
 
+
 @callback_router.callback_query(lambda cq: cq.data == "inline:added_storage")
 async def handle_added_storage_callback(callback_query: CallbackQuery):
     """
@@ -366,7 +371,8 @@ async def handle_added_storage_callback(callback_query: CallbackQuery):
     id_token = await get_firebase_id_token(firebase_uid)
     async with httpx.AsyncClient(timeout=10.0) as httpx_client:
         response = await httpx_client.get(
-            f"{BACKEND_API_URL}/file_manager/storage_providers", headers={"Authorization": f"Bearer {id_token}"}
+            f"{BACKEND_API_URL}/file_manager/storage_providers",
+            headers={"Authorization": f"Bearer {id_token}"},
         )
 
     text = "Storage Providers:\n\n"
@@ -379,4 +385,3 @@ async def handle_added_storage_callback(callback_query: CallbackQuery):
     else:
         text = "Something went wrong, please try again later.\n\n"
     await callback_query.message.answer(text=text)
-

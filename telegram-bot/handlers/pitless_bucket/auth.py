@@ -1,10 +1,12 @@
 from typing import Dict
 
-from config import Config
 import firebase_admin
-from firebase_admin import credentials, auth as firebase_auth
 import httpx
-from .constants import FIREBASE_CLIENT_CREDS, BACKEND_API_URL
+from config import Config
+from firebase_admin import auth as firebase_auth
+from firebase_admin import credentials
+
+from .constants import BACKEND_API_URL, FIREBASE_CLIENT_CREDS
 
 if not firebase_admin._apps:
     cred = credentials.Certificate(FIREBASE_CLIENT_CREDS)

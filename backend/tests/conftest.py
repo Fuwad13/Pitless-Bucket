@@ -1,11 +1,13 @@
 import uuid
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
+from fastapi.testclient import TestClient
+
+from backend import app
 from backend.auth.dependencies import get_current_user
 from backend.db.main import get_session
 from backend.file_manager.router import fm_service
-from backend import app
-from fastapi.testclient import TestClient
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
-import pytest
 
 mock_user_service = Mock()
 

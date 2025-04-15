@@ -1,27 +1,26 @@
 import json
-import urllib.parse
-from pathlib import Path
 import time
+import urllib.parse
 import uuid
-
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from redis import asyncio as aioredis
-
-from google_auth_oauthlib.flow import Flow
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
+from pathlib import Path
 
 import httpx
-from sqlmodel.ext.asyncio.session import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import HTMLResponse
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
+from redis import asyncio as aioredis
 from sqlmodel import select, update
+from sqlmodel.ext.asyncio.session import AsyncSession
 
+from backend.config import Config
+from backend.db.main import get_session
+from backend.db.models import StorageProvider, User
 from backend.file_manager.dependecies import get_redis
 from backend.log.logger import get_logger
-from backend.db.main import get_session
-from backend.config import Config
-from backend.db.models import User, StorageProvider
+
 from .dependencies import get_current_user
-from fastapi.responses import HTMLResponse
 from .schemas import UserModel
 
 logger = get_logger(

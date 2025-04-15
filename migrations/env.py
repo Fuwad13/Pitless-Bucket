@@ -1,14 +1,14 @@
 import asyncio
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
-from alembic import context
-from backend.db.models import User, StorageProvider, FileInfo, FileChunk
 from sqlmodel import SQLModel
+
 from backend.config import Config
+from backend.db.models import FileChunk, FileInfo, StorageProvider, User
 
 database_url = Config.DATABASE_URL
 

@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Dict
+
 from backend.storage_provider.abstract_provider import AbstractStorageProvider
+from backend.storage_provider.dropbox.provider import DropBoxProvider
 from backend.storage_provider.google_drive.provider import GoogleDriveProvider
 from backend.storage_provider.onedrive.provider import OneDriveProvider
-from backend.storage_provider.dropbox.provider import DropBoxProvider
 
 
 class StorageProviderFactory(ABC):

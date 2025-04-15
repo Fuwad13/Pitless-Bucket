@@ -1,10 +1,13 @@
-from typing import Dict
-import dropbox
-from backend.storage_provider.abstract_provider import AbstractStorageProvider
-from .utils import get_valid_dropbox_token
-from backend.log.logger import get_logger
-from pathlib import Path
 import tempfile
+from pathlib import Path
+from typing import Dict
+
+import dropbox
+
+from backend.log.logger import get_logger
+from backend.storage_provider.abstract_provider import AbstractStorageProvider
+
+from .utils import get_valid_dropbox_token
 
 logger = get_logger(__name__, Path(__file__).parent.parent.parent / "log" / "app.log")
 

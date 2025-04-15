@@ -1,5 +1,7 @@
 from redis import asyncio as aioredis
+
 from backend.config import Config
+
 
 def create_redis():
   return aioredis.ConnectionPool(

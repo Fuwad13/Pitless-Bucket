@@ -1,14 +1,13 @@
-from pathlib import Path
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.db.main import init_db
-from backend.log.logger import get_logger
 from backend.auth.router import auth_router
-
+from backend.db.main import init_db
 from backend.file_manager.router import fm_router
+from backend.log.logger import get_logger
 
 logger = get_logger(__name__, Path(__file__).parent / "log" / "app.log")
 
