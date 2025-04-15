@@ -1,4 +1,5 @@
 import base64
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
 
@@ -26,6 +27,8 @@ class Settings(BaseSettings):
     REDIS_PORT: int
     REDIS_USERNAME: str
     REDIS_PASSWORD: str
+
+    CHROMADB_PATH: str = str(Path.cwd() / "backend" / "ai" / "vectorstore" / "chroma")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

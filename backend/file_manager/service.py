@@ -9,7 +9,7 @@ from pathlib import Path
 
 import aiofiles
 from redis import asyncio as aioredis
-from fastapi import HTTPException, UploadFile
+from fastapi import BackgroundTasks, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
@@ -19,19 +19,38 @@ from backend.storage_provider.abstract_provider import AbstractStorageProvider
 from backend.log.logger import get_logger
 from backend.storage_provider.factory import get_provider
 from .schemas import UploadFileResponse, StorageProviderInfo, FileInfoResponse
+from langchain_community.document_loaders import PyPDFLoader
+from backend.ai.agents import summarizer_agent
 
 logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
+
 
 
 fixed_size_chunk_strategy = FixedSizeChunkStrategy()
 
 CHUNK_SIZE = 1024 * 1024 * 5
 
+READABLE_FILE_EXTENSIONS = [
+    "txt",
+    "pdf",
+    "doc",
+    "docx",
+    "ppt",
+    "pptx",
+    "xls",
+    "xlsx",
+    "csv",
+    "json",
+    "xml",
+    "html",
+    "md",
+]
+
 
 class FileManagerService:
 
     async def upload_file(
-        self, session: AsyncSession, redis_client: aioredis.Redis, file: UploadFile, firebase_uid: str
+        self, session: AsyncSession, redis_client: aioredis.Redis, file: UploadFile, firebase_uid: str, backround_tasks: BackgroundTasks
     ) -> UploadFileResponse:
         """
         Upload a file to the User's storage
@@ -72,7 +91,12 @@ class FileManagerService:
             await redis_client.delete(f"files:{firebase_uid}")
             await redis_client.delete(f"storage_usage:{firebase_uid}")
             await self._persist_file_chunks(session, file_, uploaded_chunks)
-            self._cleanup_temp_files(temp_file_path, chunk_paths)
+            for chunk_path in chunk_paths:
+                self._cleanup_temp_file(chunk_path)
+            if file_.extension in READABLE_FILE_EXTENSIONS:
+                backround_tasks.add_task(self.summarize_and_save_to_vectorstore, temp_file_path, file_, firebase_uid)
+            else:
+                self._cleanup_temp_file(temp_file_path)
 
             response = UploadFileResponse(**file_.model_dump())
             return response
@@ -105,6 +129,42 @@ class FileManagerService:
                     break
                 await temp_file.write(chunk)
             return temp_file.name
+        
+    async def summarize_and_save_to_vectorstore(self, file_path: str, file_: FileInfo, firebase_uid: str):
+        """
+        Summarize text/pdf or readable files and save it to vectorstore
+        Args:
+            file_path (str): Path to the file
+            firebase_uid (str): Firebase UID of the User
+        """
+        loader = PyPDFLoader(file_path)
+        documents = await loader.aload()
+        # class State(TypedDict):
+        #     file_id: str
+        #     file_name: str 
+        #     file_size: int
+        #     file_extension: str
+        #     file_type: str
+        #     file_content: str
+        #     file_content_summary: ContentSummary
+        for doc in documents:
+            state_ = {
+                "file_id" : str(file_.uid),
+                "file_name" : file_.file_name,
+                "file_size" : file_.size,
+                "file_extension" : file_.extension,
+                "file_type" : file_.content_type,
+                "file_content" : doc.page_content,
+            }
+            r_state = await summarizer_agent.ainvoke(state_)
+            r_state_wout_content = {k:v for k, v in r_state.items() if k != "file_content"}
+            r_state_str = json.dumps(r_state_wout_content, indent=4, default=lambda x: x.dict() if hasattr(x, 'dict') else x)
+            logger.debug(f"Summarized state:\n {r_state_str}")
+            # TODO: add the summarized content to the vectorstore with metadatas
+
+        self._cleanup_temp_file(file_path)
+            
+
 
     async def get_storage_providers(
         self, session: AsyncSession, firebase_uid: str
@@ -269,14 +329,11 @@ class FileManagerService:
             session.add(chunk_to_add)
         await session.commit()
 
-    def _cleanup_temp_files(self, temp_file_path: str, chunk_paths: List[str]):
-        """Helper method to clean up temporary files"""
+    def _cleanup_temp_file(self, temp_file_path: str):
+        """Helper method to clean up temporary file"""
         if temp_file_path and os.path.exists(temp_file_path):
             os.remove(temp_file_path)
-        if chunk_paths:
-            for chunk_path in chunk_paths:
-                if os.path.exists(chunk_path):
-                    os.remove(chunk_path)
+        
 
     async def delete_file(self, session: AsyncSession, redis_client: aioredis.Redis, file_id: str, firebase_uid: str):
         """

@@ -2,7 +2,7 @@ import uuid
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, status, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, status, Depends, UploadFile, File, BackgroundTasks
 from sqlmodel.ext.asyncio.session import AsyncSession
 from redis import asyncio as aioredis
 
@@ -26,13 +26,14 @@ fm_service = FileManagerService()
     response_model=UploadFileResponse,
 )
 async def upload_file(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
     redis_client: aioredis.Redis = Depends(get_redis),
     current_user: dict = Depends(get_current_user),
 ):
     """Upload a file to User's Storage Provider(s)"""
-    response = await fm_service.upload_file(session, redis_client, file, current_user.get("uid"))
+    response = await fm_service.upload_file(session, redis_client, file, current_user.get("uid"), background_tasks)
     return response
 
 

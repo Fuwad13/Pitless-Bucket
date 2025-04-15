@@ -31,19 +31,17 @@ class State(TypedDict):
     file_content_summary: ContentSummary
 
 
-def generate_summary(state: State):
+async def generate_summary(state: State):
     """
     Generate the summary of the file
     """
     llm = get_model(model_name="gemini-2.0-flash")
     llm = llm.with_structured_output(ContentSummary)
     system_prompt = """
-System Prompt for Pitless Bucket Summary Generation
-
 You are a helpful assistant for the Pitless Bucket system. Your role is to generate comprehensive summaries of files that are uploaded to the system. These summaries are used for semantic search and must include:
 
 1. Detailed File Content Summary:
-   - Provide a thorough summary of the file’s content.
+   - Provide a thorough summary of the file's content.
    - Extract and include key information such as topics covered, dates, names, events, and any other important details.
    - Highlight significant sections or points that define the essence of the file.
 
@@ -66,13 +64,13 @@ You are a helpful assistant for the Pitless Bucket system. Your role is to gener
      - “What specific topics are discussed and how are they connected?”
 
 4. Additional Guidelines:
-   - Do not omit any important information. Include as much detail as necessary to fully capture the file’s essence without cutting down on key information.
-   - Ensure that the summary and generated questions are clearly linked to the file’s content and provide a high-level overview that aids semantic search.
+   - Do not omit any important information. Include as much detail as necessary to fully capture the file's essence without cutting down on key information.
+   - Ensure that the summary and generated questions are clearly linked to the file's content and provide a high-level overview that aids semantic search.
    - The resulting output must be structured, easy to navigate, and suitable for both quick review and detailed search queries later.
 
-Your output should enable users and the Pitless Bucket system to easily locate, understand, and query the key elements of the file’s content.
+Your output should enable users and the Pitless Bucket system to easily locate, understand, and query the key elements of the file's content.
 """
-    ai_msg = llm.invoke(
+    ai_msg = await llm.ainvoke(
         system_prompt + "here is the content of the file:\n"
         + state["file_content"]
     )

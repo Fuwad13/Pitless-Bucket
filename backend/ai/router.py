@@ -13,8 +13,9 @@ from .schemas import UploadFileResponse, StorageProviderInfo, FileInfoResponse
 
 logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
 
-aget_router = APIRouter()
+ai_router = APIRouter()
 
-@aget_router.get("/invoke")
+@ai_router.get("/invoke")
 async def agent_invoke():
     return {"message": "Not yet implemented"}
+
