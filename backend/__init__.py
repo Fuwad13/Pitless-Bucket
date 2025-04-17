@@ -8,6 +8,8 @@ from backend.auth.router import auth_router
 from backend.db.main import init_db
 from backend.file_manager.router import fm_router
 from backend.log.logger import get_logger
+from backend.ai.vectorstore import init_chromadb
+from backend.ai.router import ai_router
 
 logger = get_logger(__name__, Path(__file__).parent / "log" / "app.log")
 
@@ -16,6 +18,7 @@ logger = get_logger(__name__, Path(__file__).parent / "log" / "app.log")
 async def life_span(app: FastAPI):
     logger.info("Server is starting......")
     # await init_db() # uncomment this if there was a database schema change
+    # init_chromadb()
     yield
     logger.info("Server is shutting down......")
 
@@ -45,3 +48,4 @@ app.include_router(auth_router, prefix=f"/api/{version}/auth", tags=["auth"])
 app.include_router(
     fm_router, prefix=f"/api/{version}/file_manager", tags=["file_manager"]
 )
+app.include_router(ai_router, prefix=f"/api/{version}/ai", tags=["ai"])

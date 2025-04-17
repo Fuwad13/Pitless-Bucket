@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     REDIS_USERNAME: str
     REDIS_PASSWORD: str
 
+    GOOGLE_API_KEY: str
+    OPENAI_API_KEY: str
+    
     CHROMADB_PATH: str = str(Path.cwd() / "backend" / "ai" / "vectorstore" / "chroma")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

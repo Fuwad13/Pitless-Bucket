@@ -21,9 +21,10 @@ class ContentSummary(BaseModel):
         description="Questions that the user might ask about the file",
     )
 
+
 class State(TypedDict):
     file_id: str
-    file_name: str 
+    file_name: str
     file_size: int
     file_extension: str
     file_type: str
@@ -71,8 +72,7 @@ You are a helpful assistant for the Pitless Bucket system. Your role is to gener
 Your output should enable users and the Pitless Bucket system to easily locate, understand, and query the key elements of the file's content.
 """
     ai_msg = await llm.ainvoke(
-        system_prompt + "here is the content of the file:\n"
-        + state["file_content"]
+        system_prompt + "here is the content of the file:\n" + state["file_content"]
     )
     return {"file_content_summary": ai_msg}
 

@@ -15,8 +15,8 @@ class UploadFileResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-class StorageProviderInfo(BaseModel):
 
+class StorageProviderInfo(BaseModel):
     provider_name: str
     email: str
     used_space: int
@@ -24,12 +24,11 @@ class StorageProviderInfo(BaseModel):
 
 
 class FileInfoResponse(BaseModel):
-
     uid: UUID
-    firebase_uid: str 
+    firebase_uid: str
     file_name: str
-    content_type: str 
-    extension: str 
-    size: int 
-    created_at: datetime 
+    content_type: str
+    extension: str
+    size: int
+    created_at: datetime
     updated_at: datetime
