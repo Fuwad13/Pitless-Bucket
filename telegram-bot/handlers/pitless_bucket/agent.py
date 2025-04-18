@@ -27,7 +27,7 @@ async def text_handler(message: Message) -> None:
             )
             response.raise_for_status()
             data = response.json()
-            await message.answer(data)
+            await message.answer(data["answer"])
 
     else:
         await message.answer(

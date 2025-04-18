@@ -10,7 +10,7 @@ from backend.db.main import get_session
 from backend.log.logger import get_logger
 from .agents import chatbot_agent, chatbot_agent2
 from langchain_core.messages import HumanMessage
-from .schemas import ChatInput
+from .schemas import ChatInput, ChatResponse
 
 
 logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
@@ -26,12 +26,12 @@ async def agent_invoke_test(q: str, session: AsyncSession = Depends(get_session)
     return ret
 
 
-@ai_router.post("/chat")
+@ai_router.post("/chat", response_model=ChatResponse)
 async def agent_invoke(chat_input: ChatInput, current_user: dict = Depends(get_current_user)):
     ret = await chatbot_agent2.ainvoke(
         input={"user_id": current_user.get("uid"),"messages": [HumanMessage(content=chat_input.question)]},
         config={"configurable": {"thread_id": chat_input.session_id if chat_input.session_id else current_user.get("uid")}},
     )
     messages = ret.get("messages")
-    return messages[-1].content
+    return ChatResponse(answer=messages[-1].content, session_id=chat_input.session_id if chat_input.session_id else current_user.get("uid"))
 

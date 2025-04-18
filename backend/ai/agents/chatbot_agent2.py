@@ -5,6 +5,8 @@ from typing import Annotated, List
 
 import aiofiles
 import chromadb
+from cachetools import TTLCache, cached
+from cachetools.keys import hashkey
 from langchain.tools import tool
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
@@ -19,11 +21,11 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from backend.config import Config
 from backend.db.main import async_engine
-from backend.db.models import FileChunk, FileInfo, StorageProvider
+from backend.db.models import FileChunk, FileInfo, StorageProvider, User
 from backend.storage_provider.factory import get_provider
 
 from .llm import get_model
-from .prompts import system_prompt1
+from .prompts import CHATBOT_AGENT_PROMPT
 
 chroma_client = chromadb.PersistentClient(path=Config.CHROMADB_PATH)
 embeddings = OpenAIEmbeddings(
@@ -42,7 +44,7 @@ model = get_model("gemini-2.0-flash")
 
 
 system_prompt = SystemMessage(
-    content=system_prompt1
+    content=CHATBOT_AGENT_PROMPT
 )
 
 
@@ -58,6 +60,31 @@ def get_user_id(state: Annotated[ChatbotAgentState, InjectedState]) -> str:
     return state["user_id"]
 
 @tool
+async def get_user_info(
+    state: Annotated[ChatbotAgentState, InjectedState]
+) -> str:
+    """
+    Use this tool to get the user's information from the database. 
+    """
+    user_id = state["user_id"]
+    try:
+        async with AsyncSession(async_engine) as session:
+            stmt = select(User).where(User.firebase_uid == user_id)
+            result = (await session.exec(stmt)).first()
+            if not result:
+                return "User not found"
+            return result.model_dump(mode="json")
+    except Exception as e:
+        return f"Error getting user info: {e}"
+
+cache = TTLCache(maxsize=100, ttl=1800)
+
+def cache_key(file_id, state):
+    return hashkey(state["user_id"], file_id)
+
+
+@tool
+@cached(cache, key=cache_key)
 async def download_file_tool(
     file_id: Annotated[str, "The file ID extracted from document metadata"],
     state: Annotated[ChatbotAgentState, InjectedState]
@@ -118,6 +145,26 @@ async def download_file_tool(
 
 
 @tool
+async def get_file_list(
+    state: Annotated[ChatbotAgentState, InjectedState]
+) -> List[dict]:
+    """
+    Use this tool to get the list of files belonging to the user.
+    """
+    user_id = state["user_id"]
+    try:
+        async with AsyncSession(async_engine) as session:
+            stmt = select(FileInfo).where(FileInfo.firebase_uid == user_id)
+            results = await session.exec(stmt)
+            files = results.all()
+            if not files:
+                return []
+            return [file.model_dump(mode="json") for file in files]
+    except Exception as e:
+        return f"Error retrieving file list: {e}"
+
+
+@tool
 def retriever_tool(
     query: Annotated[str, "User's query (refined by the agent)"],
     state: Annotated[ChatbotAgentState, InjectedState],
@@ -135,7 +182,7 @@ def retriever_tool(
 
 
 
-tools = [retriever_tool, download_file_tool]
+tools = [retriever_tool, download_file_tool, get_user_info, get_file_list]
 
 chatbot_agent2 = create_react_agent(
     model=model,
