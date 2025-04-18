@@ -9,8 +9,8 @@ from aiogram.enums import ParseMode
 from aiogram.types import BotCommand
 from config import Config
 from handlers.common import common_router
-from handlers.echo import echo_router
 from handlers.pitless_bucket import (
+    agent_router,
     callback_router,
     dashboard_router,
     download_router,
@@ -38,6 +38,7 @@ async def main() -> None:
         whoami_router,
         callback_router,
         dashboard_router,
+        agent_router,
     )
 
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))

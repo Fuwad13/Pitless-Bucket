@@ -1,3 +1,4 @@
+from .agent import agent_router
 from .callbacks import callback_router
 from .dashboard import dashboard_router
 from .download import download_router
