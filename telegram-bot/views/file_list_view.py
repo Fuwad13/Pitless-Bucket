@@ -1,10 +1,13 @@
 from pathlib import Path
-from typing import Tuple, Dict
-from aiogram.types import InlineKeyboardMarkup
+from typing import Dict, Tuple
+
 import httpx
-from .keyboards.inline import file_list_menu, link_menu
+from aiogram.types import InlineKeyboardMarkup
 from handlers.pitless_bucket.auth import get_firebase_id_token
 from handlers.pitless_bucket.constants import BACKEND_API_URL
+
+from .keyboards.inline import file_list_menu, link_menu
+
 
 # TODO: Polish this view
 async def get_file_list_view(data: Dict) -> Tuple[str, InlineKeyboardMarkup, str]:

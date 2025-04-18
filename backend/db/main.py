@@ -1,16 +1,19 @@
 from typing import AsyncIterator
-from sqlmodel import create_engine, SQLModel
+
 from sqlalchemy.ext.asyncio import AsyncEngine
-from backend.config import Config
-from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel, create_engine
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from backend.config import Config
 
 async_engine = AsyncEngine(create_engine(url=Config.DATABASE_URL, echo=True))
 
 
 async def init_db():
     async with async_engine.begin() as conn:
-        from backend.db.models import User, StorageProvider, FileInfo, FileChunk
+        from backend.db.models import (FileChunk, FileInfo, StorageProvider,
+                                       User)
 
         await conn.run_sync(SQLModel.metadata.create_all)
 

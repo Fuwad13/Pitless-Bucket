@@ -1,24 +1,34 @@
 import asyncio
 import json
 import os
-import time
-from typing import Dict, List, Optional, Tuple
-import uuid
 import tempfile
+import time
+import uuid
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 import aiofiles
-from redis import asyncio as aioredis
-from fastapi import HTTPException, UploadFile
+import chromadb
+from fastapi import BackgroundTasks, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from sqlmodel.ext.asyncio.session import AsyncSession
+from langchain_chroma import Chroma
+from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
+from langchain_core.documents import Document
+from langchain_experimental.text_splitter import SemanticChunker
+from langchain_openai import OpenAIEmbeddings
+from redis import asyncio as aioredis
 from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from backend.ai.agents import summarizer_agent
 from backend.chunk_strategy.strategy import FixedSizeChunkStrategy
+from backend.config import Config
 from backend.db.models import FileChunk, FileInfo, StorageProvider
-from backend.storage_provider.abstract_provider import AbstractStorageProvider
 from backend.log.logger import get_logger
+from backend.storage_provider.abstract_provider import AbstractStorageProvider
 from backend.storage_provider.factory import get_provider
-from .schemas import UploadFileResponse
+
+from .schemas import FileInfoResponse, StorageProviderInfo, UploadFileResponse
 
 logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
 
@@ -27,11 +37,33 @@ fixed_size_chunk_strategy = FixedSizeChunkStrategy()
 
 CHUNK_SIZE = 1024 * 1024 * 5
 
+READABLE_FILE_EXTENSIONS = [
+    "txt",
+    "pdf",
+    "doc",
+    "docx",
+    # "ppt",
+    # "pptx",
+    # "xls",
+    # "xlsx",
+    # "csv",
+    # "json",
+    # "xml",
+    # "html",
+    # "md",
+]
+
+EMBEDDING_MODEL = "text-embedding-3-small"
+
 
 class FileManagerService:
-
     async def upload_file(
-        self, session: AsyncSession, redis_client: aioredis.Redis, file: UploadFile, firebase_uid: str
+        self,
+        session: AsyncSession,
+        redis_client: aioredis.Redis,
+        file: UploadFile,
+        firebase_uid: str,
+        backround_tasks: BackgroundTasks,
     ) -> UploadFileResponse:
         """
         Upload a file to the User's storage
@@ -72,7 +104,17 @@ class FileManagerService:
             await redis_client.delete(f"files:{firebase_uid}")
             await redis_client.delete(f"storage_usage:{firebase_uid}")
             await self._persist_file_chunks(session, file_, uploaded_chunks)
-            self._cleanup_temp_files(temp_file_path, chunk_paths)
+            for chunk_path in chunk_paths:
+                self._cleanup_temp_file(chunk_path)
+            if file_.extension in READABLE_FILE_EXTENSIONS:
+                backround_tasks.add_task(
+                    self.summarize_and_save_to_vectorstore,
+                    temp_file_path,
+                    file_,
+                    firebase_uid,
+                )
+            else:
+                self._cleanup_temp_file(temp_file_path)
 
             response = UploadFileResponse(**file_.model_dump())
             return response
@@ -106,6 +148,76 @@ class FileManagerService:
                 await temp_file.write(chunk)
             return temp_file.name
 
+    async def summarize_and_save_to_vectorstore(
+        self, file_path: str, file_: FileInfo, firebase_uid: str
+    ):
+        """
+        Summarize the file content and save it to vectorstore
+        Args:
+            file_path (str): Path to the file
+            file_ (FileInfo): FileInfo object containing file metadata
+            firebase_uid (str): Firebase UID of the User
+        """
+        if file_.extension == "pdf":
+            loader = PyPDFLoader(file_path)
+        elif file_.extension in ["doc", "docx"]:
+            loader = Docx2txtLoader(file_path)
+        elif file_.extension == "txt":
+            loader = TextLoader(file_path)
+        else:
+            raise ValueError(f"Unsupported file type: {file_.extension}")
+        documents = await loader.aload()
+        embeddings = OpenAIEmbeddings(
+            model=EMBEDDING_MODEL, api_key=Config.OPENAI_API_KEY
+        )
+        docs_to_store: List[Document] = []
+        for doc in documents:
+            state_ = {
+                "file_id": str(file_.uid),
+                "file_name": file_.file_name,
+                "file_size": file_.size,
+                "file_extension": file_.extension,
+                "file_type": file_.content_type,
+                "file_content": doc.page_content,
+            }
+            r_state = await summarizer_agent.ainvoke(state_)
+            r_state_wout_content = {
+                k: v for k, v in r_state.items() if k != "file_content"
+            }
+            r_state_str = json.dumps(
+                r_state_wout_content,
+                indent=4,
+                default=lambda x: x.dict() if hasattr(x, "dict") else x,
+            )
+            mtdt = {
+                k: v
+                for k, v in r_state_wout_content.items()
+                if k != "file_content_summary"
+            }
+            mtdt["user_id"] = firebase_uid
+            # logger.debug(f"Summarized state:\n {r_state_str}")
+            # logger.debug(f"Metadata:\n {mtdt}")
+            # TODO: CHECK IF THIS PROCESS BLOCKS THE EVENT LOOP
+            text_splitter = SemanticChunker(
+                embeddings
+            )  # TODO: experiment with min_chunk_size
+            docs_ = text_splitter.create_documents([r_state_str], [mtdt])
+            docs_to_store.extend(docs_)
+
+        chroma_client = chromadb.PersistentClient(path=Config.CHROMADB_PATH)
+        vector_store = Chroma(
+            client=chroma_client,
+            collection_name="file_content_summary",
+            embedding_function=embeddings,
+        )
+        await vector_store.aadd_documents(docs_to_store)
+        # logger.debug(docs_to_store)
+        logger.debug(
+            f"Added documents to vector store. Original file size: {file_.size}, summarized size: {sum(len(doc.page_content) for doc in docs_to_store)}"
+        )
+
+        self._cleanup_temp_file(file_path)
+
     async def get_storage_providers(
         self, session: AsyncSession, firebase_uid: str
     ) -> List[Tuple[str, AbstractStorageProvider]]:
@@ -128,8 +240,10 @@ class FileManagerService:
             )
             storage_providers.append((str(res.uid), storage_provider))
         return storage_providers
-    
-    async def get_storage_providers_info(self, session: AsyncSession, redis_client: aioredis.Redis, firebase_uid: str) -> Optional[List[StorageProvider]]:
+
+    async def get_storage_providers_info(
+        self, session: AsyncSession, redis_client: aioredis.Redis, firebase_uid: str
+    ) -> Optional[List[StorageProviderInfo]]:
         """
         Get the storage providers linked to the User
         Args:
@@ -137,12 +251,14 @@ class FileManagerService:
             redis_client (aioredis.Redis): Redis cache client
             firebase_uid (str): Firebase UID of the User
         Returns:
-            List[StorageProvider]: List of StorageProvider objects
+            List[StorageProviderInfo]: List of StorageProviderInfo objects
         """
-        cached = await self.get_cached_storage_providers_info(redis_client, firebase_uid)
+        cached = await self.get_cached_storage_providers_info(
+            redis_client, firebase_uid
+        )
         if cached:
             cached_storage_providers = json.loads(cached)
-            return [StorageProvider(**sp) for sp in cached_storage_providers]
+            return [StorageProviderInfo(**sp) for sp in cached_storage_providers]
 
         stmt = select(StorageProvider).where(
             StorageProvider.firebase_uid == firebase_uid
@@ -151,10 +267,23 @@ class FileManagerService:
         if not results:
             return None
         results = results.all()
-        await self.set_cached_storage_providers(redis_client, firebase_uid, results)
-        return results
-    
-    async def get_cached_storage_providers_info(self, redis_client: aioredis.Redis, firebase_uid: str):
+        sp_info_results = [
+            StorageProviderInfo(
+                provider_name=res.provider_name,
+                email=res.email,
+                used_space=res.used_space,
+                available_space=res.available_space,
+            )
+            for res in results
+        ]
+        await self.set_cached_storage_providers(
+            redis_client, firebase_uid, sp_info_results
+        )
+        return sp_info_results
+
+    async def get_cached_storage_providers_info(
+        self, redis_client: aioredis.Redis, firebase_uid: str
+    ):
         """
         Get cached storage providers info from Redis
         Args:
@@ -163,8 +292,13 @@ class FileManagerService:
         """
         key = f"sp_info:{firebase_uid}"
         return await redis_client.get(key)
-    
-    async def set_cached_storage_providers(self, redis_client: aioredis.Redis, firebase_uid: str, storage_providers: List[StorageProvider]):
+
+    async def set_cached_storage_providers(
+        self,
+        redis_client: aioredis.Redis,
+        firebase_uid: str,
+        storage_providers: List[StorageProviderInfo],
+    ):
         """
         Set cached storage providers info in Redis
         Args:
@@ -173,7 +307,11 @@ class FileManagerService:
             storage_providers (List[StorageProvider]): List of StorageProvider objects to cache
         """
         key = f"sp_info:{firebase_uid}"
-        await redis_client.set(key, json.dumps([sp.model_dump(mode='json') for sp in storage_providers]), ex=3600)
+        await redis_client.set(
+            key,
+            json.dumps([sp.model_dump(mode="json") for sp in storage_providers]),
+            ex=3600,
+        )
 
     async def _upload_chunks(
         self,
@@ -194,7 +332,7 @@ class FileManagerService:
         """
         uploaded_chunks = []
         for idx, chunk_path in enumerate(chunk_paths):
-            chunk_name = f"{filename}_{int(time.time())}.part{idx+1:03d}"
+            chunk_name = f"{filename}_{int(time.time())}.part{idx + 1:03d}"
 
             # TODO :Select storage provider based on strategy
             storage_provider_id, storage_provider = storage_providers[
@@ -260,16 +398,19 @@ class FileManagerService:
             session.add(chunk_to_add)
         await session.commit()
 
-    def _cleanup_temp_files(self, temp_file_path: str, chunk_paths: List[str]):
-        """Helper method to clean up temporary files"""
+    def _cleanup_temp_file(self, temp_file_path: str):
+        """Helper method to clean up temporary file"""
         if temp_file_path and os.path.exists(temp_file_path):
             os.remove(temp_file_path)
-        if chunk_paths:
-            for chunk_path in chunk_paths:
-                if os.path.exists(chunk_path):
-                    os.remove(chunk_path)
 
-    async def delete_file(self, session: AsyncSession, file_id: str, firebase_uid: str):
+    async def delete_file(
+        self,
+        session: AsyncSession,
+        redis_client: aioredis.Redis,
+        file_id: str,
+        firebase_uid: str,
+        background_tasks: BackgroundTasks,
+    ):
         """
         Delete a file from the User's storage (by file_id)
         Args:
@@ -303,12 +444,28 @@ class FileManagerService:
                 await asyncio.to_thread(provider.delete_chunk, chunk.provider_file_id)
             await session.delete(result)
             await session.commit()
+            background_tasks.add_task(self.delete_from_vectorstore, file_id)
+            await redis_client.delete(f"files:{firebase_uid}")
+            await redis_client.delete(f"storage_usage:{firebase_uid}")
             return {"message": f"{result.file_name} deleted successfully"}
 
         except Exception as e:
             await session.rollback()
             logger.error(f"Error in delete_file: {e}")
             raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+
+    async def delete_from_vectorstore(self, file_id: str):
+        """
+        Delete the file's summary embedding from the vector store
+        Args:
+            file_id (str): File ID
+        """
+        chroma_client = chromadb.PersistentClient(path=Config.CHROMADB_PATH)
+        vector_store = Chroma(
+            client=chroma_client, collection_name="file_content_summary"
+        )
+        await vector_store.adelete(where={"file_id": str(file_id)})
+        logger.debug(f"Deleted documents with file_id {file_id} from vector store")
 
     async def rename_file(
         self, session: AsyncSession, file_id: str, firebase_uid: str, new_name: str
@@ -340,7 +497,9 @@ class FileManagerService:
             logger.error(f"Error in rename_file: {e}")
             raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
 
-    async def list_files(self, session: AsyncSession, redis_client : aioredis.Redis, firebase_uid: str):
+    async def list_files(
+        self, session: AsyncSession, redis_client: aioredis.Redis, firebase_uid: str
+    ) -> List[FileInfoResponse]:
         """
         List all files in the User's storage
         Args:
@@ -348,17 +507,18 @@ class FileManagerService:
             redis_client (aioredis.Redis): Redis cache client
             firebase_uid (str): Firebase UID of the User
         Returns:
-            List[FileInfo]: List of FileInfo objects
+            List[FileInfoResponse]: List of FileInfo objects
         """
         cached = await self.get_cached_files(redis_client, firebase_uid)
         if cached:
             cached_files = json.loads(cached)
-            return [FileInfo(**file) for file in cached_files]
+            return [FileInfoResponse(**file) for file in cached_files]
         stmt = select(FileInfo).where(FileInfo.firebase_uid == firebase_uid)
         result = (await session.exec(stmt)).all()
-        await self.set_cached_files(redis_client, firebase_uid, result)
-        return result
-    
+        response = [FileInfoResponse(**file.model_dump(mode="json")) for file in result]
+        await self.set_cached_files(redis_client, firebase_uid, response)
+        return response
+
     async def get_cached_files(self, redis_client: aioredis.Redis, firebase_uid: str):
         """
         Get cached files from Redis
@@ -370,8 +530,10 @@ class FileManagerService:
         """
         key = f"files:{firebase_uid}"
         return await redis_client.get(key)
-    
-    async def set_cached_files(self, redis_client: aioredis.Redis, firebase_uid: str, files: List[FileInfo]):
+
+    async def set_cached_files(
+        self, redis_client: aioredis.Redis, firebase_uid: str, files: List[FileInfo]
+    ):
         """
         Set cached files in Redis
         Args:
@@ -380,7 +542,9 @@ class FileManagerService:
             files (List[FileInfo]): List of FileInfo objects to cache
         """
         key = f"files:{firebase_uid}"
-        await redis_client.set(key, json.dumps([file.model_dump(mode='json') for file in files]), ex=600)
+        await redis_client.set(
+            key, json.dumps([file.model_dump(mode="json") for file in files]), ex=600
+        )
 
     async def download_file(
         self, session: AsyncSession, file_id: str, firebase_uid: str
@@ -466,7 +630,9 @@ class FileManagerService:
     ):
         pass
 
-    async def get_storage_usage(self, session: AsyncSession, redis_client: aioredis.Redis, firebase_uid: str) -> Dict:
+    async def get_storage_usage(
+        self, session: AsyncSession, redis_client: aioredis.Redis, firebase_uid: str
+    ) -> Dict:
         """
         Get the storage usage of the User
         Args:
@@ -478,7 +644,7 @@ class FileManagerService:
         cached = await self.get_cached_storage_usage(redis_client, firebase_uid)
         if cached:
             return json.loads(cached)
-        
+
         stmt = select(StorageProvider).where(
             StorageProvider.firebase_uid == firebase_uid
         )
@@ -500,8 +666,10 @@ class FileManagerService:
             usage["total"] += stat_dict["total"]
         await self.set_cached_storage_usage(redis_client, firebase_uid, usage)
         return usage
-    
-    async def get_cached_storage_usage(self, redis_client: aioredis.Redis, firebase_uid: str):
+
+    async def get_cached_storage_usage(
+        self, redis_client: aioredis.Redis, firebase_uid: str
+    ):
         """
         Get cached storage usage from Redis
         Args:
@@ -510,8 +678,10 @@ class FileManagerService:
         """
         key = f"storage_usage:{firebase_uid}"
         return await redis_client.get(key)
-    
-    async def set_cached_storage_usage(self, redis_client: aioredis.Redis, firebase_uid: str, usage: Dict):
+
+    async def set_cached_storage_usage(
+        self, redis_client: aioredis.Redis, firebase_uid: str, usage: Dict
+    ):
         """
         Set cached storage usage in Redis
         Args:
@@ -536,7 +706,6 @@ class FileManagerService:
 
 
 class MetaDataManagerService:
-
     async def save_file_metadata(self):
         pass
 

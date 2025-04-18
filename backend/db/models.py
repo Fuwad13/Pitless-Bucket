@@ -1,8 +1,9 @@
+import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
-import uuid
-from sqlalchemy.dialects.postgresql import UUID, JSON, TIMESTAMP, BIGINT
-from sqlmodel import Field, Relationship, SQLModel, Column, String
+
+from sqlalchemy.dialects.postgresql import BIGINT, JSON, TIMESTAMP, UUID
+from sqlmodel import Column, Field, Relationship, SQLModel, String
 
 # --------------------------
 # User Model

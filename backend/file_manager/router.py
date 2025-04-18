@@ -1,17 +1,18 @@
 import uuid
 from pathlib import Path
+from typing import List
 
-from fastapi import APIRouter, status, Depends, UploadFile, File, HTTPException
-from sqlmodel.ext.asyncio.session import AsyncSession
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile, status
 from redis import asyncio as aioredis
+from sqlmodel.ext.asyncio.session import AsyncSession
 
+from backend.auth.dependencies import get_current_user
 from backend.db.main import get_session
 from backend.log.logger import get_logger
-from .service import FileManagerService
-from backend.auth.dependencies import get_current_user
-from .dependecies import get_redis
-from .schemas import UploadFileResponse
 
+from .dependecies import get_redis
+from .schemas import FileInfoResponse, StorageProviderInfo, UploadFileResponse
+from .service import FileManagerService
 
 logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
 
@@ -25,19 +26,23 @@ fm_service = FileManagerService()
     response_model=UploadFileResponse,
 )
 async def upload_file(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
     redis_client: aioredis.Redis = Depends(get_redis),
     current_user: dict = Depends(get_current_user),
 ):
     """Upload a file to User's Storage Provider(s)"""
-    response = await fm_service.upload_file(session, redis_client, file, current_user.get("uid"))
+    response = await fm_service.upload_file(
+        session, redis_client, file, current_user.get("uid"), background_tasks
+    )
     return response
 
 
 @fm_router.get(
     "/list_files",
     status_code=status.HTTP_200_OK,
+    response_model=List[FileInfoResponse],
 )
 async def list_files(
     session: AsyncSession = Depends(get_session),
@@ -45,17 +50,21 @@ async def list_files(
     redis_client: aioredis.Redis = Depends(get_redis),
 ):
     """List all files uploaded by User"""
-    return await fm_service.list_files(session, redis_client,current_user.get("uid"))
+    return await fm_service.list_files(session, redis_client, current_user.get("uid"))
 
 
 @fm_router.delete("/delete_file")
 async def delete_file(
     file_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session),
+    redis_client: aioredis.Redis = Depends(get_redis),
     current_user: dict = Depends(get_current_user),
 ):
     """Delete a file uploaded by User"""
-    return await fm_service.delete_file(session, file_id, current_user.get("uid"))
+    return await fm_service.delete_file(
+        session, redis_client, file_id, current_user.get("uid"), background_tasks
+    )
 
 
 @fm_router.get("/download_file")
@@ -88,22 +97,31 @@ async def get_storage_usage(
     current_user: dict = Depends(get_current_user),
 ):
     """Get Storage Usage of User"""
-    usage = await fm_service.get_storage_usage(session, redis_client, current_user.get("uid"))
+    usage = await fm_service.get_storage_usage(
+        session, redis_client, current_user.get("uid")
+    )
     return usage
 
-@fm_router.get("/storage_providers")
+
+@fm_router.get(
+    "/storage_providers",
+    status_code=status.HTTP_200_OK,
+    response_model=List[StorageProviderInfo],
+)
 async def get_storage_providers_info(
     session: AsyncSession = Depends(get_session),
     redis_client: aioredis.Redis = Depends(get_redis),
     current_user: dict = Depends(get_current_user),
 ):
     """Get Storage Providers of User"""
-    providers = await fm_service.get_storage_providers_info(session, redis_client, current_user.get("uid"))
+    providers = await fm_service.get_storage_providers_info(
+        session, redis_client, current_user.get("uid")
+    )
     return providers
 
 
 @fm_router.get("/ping")
-async def ping(cache: aioredis.Redis =Depends(get_redis)):
+async def ping(cache: aioredis.Redis = Depends(get_redis)):
     """Ping the server"""
     # await cache.set("ping", "pong", ex=10)
     return {"message": "Pong"}

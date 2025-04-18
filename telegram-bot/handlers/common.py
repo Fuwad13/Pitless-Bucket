@@ -1,6 +1,6 @@
 from aiogram import Router
 from aiogram.filters import Command
-from aiogram.types import Message, FSInputFile
+from aiogram.types import FSInputFile, Message
 from handlers.pitless_bucket.constants import HELP_TEXT
 from views import get_help_view
 

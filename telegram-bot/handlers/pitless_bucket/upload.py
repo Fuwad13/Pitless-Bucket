@@ -1,10 +1,11 @@
+import os
+
+import httpx
 from aiogram import Router
 from aiogram.filters import Command
-from aiogram.types import Message, PhotoSize, Document, Video
-import httpx
-from handlers.pitless_bucket.constants import BACKEND_API_URL
+from aiogram.types import Document, Message, PhotoSize, Video
 from handlers.pitless_bucket.auth import get_firebase_id_token, get_user
-import os
+from handlers.pitless_bucket.constants import BACKEND_API_URL
 
 upload_router = Router()
 

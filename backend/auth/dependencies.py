@@ -1,9 +1,12 @@
-from fastapi import Request, HTTPException, Depends, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import firebase_admin
-from firebase_admin import credentials, auth as firebase_auth
-from backend.config import Config
 from pathlib import Path
+
+import firebase_admin
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from firebase_admin import auth as firebase_auth
+from firebase_admin import credentials
+
+from backend.config import Config
 from backend.log.logger import get_logger
 
 logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")

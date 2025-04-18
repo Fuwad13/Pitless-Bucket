@@ -1,7 +1,10 @@
 from pathlib import Path
 from typing import Tuple
+
 from aiogram.types import InlineKeyboardMarkup
+
 from .keyboards.inline import settings_menu
+
 
 async def get_settings_view() -> Tuple[str, InlineKeyboardMarkup, str]:
     """"

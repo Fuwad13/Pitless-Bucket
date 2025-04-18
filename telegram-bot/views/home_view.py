@@ -1,7 +1,10 @@
 from pathlib import Path
-from typing import Tuple, Dict
+from typing import Dict, Tuple
+
 from aiogram.types import InlineKeyboardMarkup
-from .keyboards.inline import start_menu, link_menu
+
+from .keyboards.inline import link_menu, start_menu
+
 
 async def get_home_view(name: str, data: Dict) -> Tuple[str, InlineKeyboardMarkup, str]:
     """

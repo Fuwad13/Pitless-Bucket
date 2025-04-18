@@ -1,9 +1,13 @@
 import base64
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
+
 from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    BACKEND_URL: str = "https://promoted-cardinal-handy.ngrok-free.app"
+    FRONTEND_URL: str = "https://pitless-bucket.vercel.app"
     DATABASE_URL: str
     WEB_CLIENT_ID: str
     WEB_CLIENT_SECRET: str
@@ -24,6 +28,11 @@ class Settings(BaseSettings):
     REDIS_PORT: int
     REDIS_USERNAME: str
     REDIS_PASSWORD: str
+
+    GOOGLE_API_KEY: str
+    OPENAI_API_KEY: str
+    
+    CHROMADB_PATH: str = str(Path.cwd() / "backend" / "ai" / "vectorstore" / "chroma")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

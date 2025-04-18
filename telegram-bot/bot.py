@@ -1,26 +1,26 @@
 import asyncio
 import logging
-import sys, signal
-
-from handlers.echo import echo_router
-from handlers.start import start_router
-from handlers.common import common_router
-from handlers.pitless_bucket import (
-    callback_router,
-    upload_router,
-    download_router,
-    link_router,
-    whoami_router,
-    dashboard_router,
-    storage_status_router,
-    list_files_router,
-)
+import signal
+import sys
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
-from aiogram.types import BotCommand
 from aiogram.enums import ParseMode
+from aiogram.types import BotCommand
 from config import Config
+from handlers.common import common_router
+from handlers.pitless_bucket import (
+    agent_router,
+    callback_router,
+    dashboard_router,
+    download_router,
+    link_router,
+    list_files_router,
+    storage_status_router,
+    upload_router,
+    whoami_router,
+)
+from handlers.start import start_router
 
 TOKEN = Config.TOKEN
 
@@ -38,6 +38,7 @@ async def main() -> None:
         whoami_router,
         callback_router,
         dashboard_router,
+        agent_router,
     )
 
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
