@@ -1,14 +1,11 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Grid, Home, List, Loader2, Menu, Settings } from "lucide-react";
+import { Grid, List, Loader2 } from "lucide-react";
 import React, { useContext, useEffect, useState } from "react";
-import Link from "next/link";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import useAxiosPublic from "@/hooks/use-axios";
-import FileUpload from "@/modals/FileUpload";
 import FileCard from "@/components/customComponents/FileCard";
 import { AuthContext } from "@/app/AuthContext";
 import { useRouter } from "next/navigation";

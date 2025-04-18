@@ -2,11 +2,11 @@ import React from "react";
 
 import {
   Cloud,
-  Shuffle,
+  // Shuffle,
   Sparkles,
   Link2,
   Combine,
-  UploadCloud,
+  // UploadCloud,
   DownloadCloud,
   Settings2,
 } from "lucide-react";
