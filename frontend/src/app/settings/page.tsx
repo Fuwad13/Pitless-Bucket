@@ -1,21 +1,22 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+// import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
-  Home,
-  Menu,
-  Settings,
-  HardDrive,
+  // Home,
+  // Menu,
+  // Settings,
+  // HardDrive,
   ArrowLeft,
   Loader2,
 } from "lucide-react";
 import React, { useContext, useEffect, useRef, useState } from "react";
-import Link from "next/link";
+// import Link from "next/link";
 import { toast } from "react-toastify";
 import { AuthContext } from "@/app/AuthContext";
 import { useRouter } from "next/navigation";
 import useAxiosPublic from "@/hooks/use-axios";
 import { Input } from "@/components/ui/input";
+import Sidebar from "@/components/customComponents/Sidebar";
 
 interface StorageStat {
   used: number;
@@ -259,10 +260,13 @@ const SettingsPage: React.FC = () => {
     ? connectedStorages
     : connectedStorages.slice(0, 3);
 
+  const dummyRefresh = () => {
+    console.log("Refresh function called from About page (no-op)");
+  };
   return (
     <div className="flex min-h-screen">
       {/* Sidebar for Large Screens */}
-      <aside className="hidden md:flex flex-col w-52 bg-blue-50 p-6 space-y-4 shadow-lg border-r">
+      {/* <aside className="hidden md:flex flex-col w-60 bg-blue-50 p-6 space-y-4 shadow-lg border-r relative">
         <nav className="space-y-3">
           <Link
             href="/dashboard"
@@ -277,7 +281,7 @@ const SettingsPage: React.FC = () => {
             <Settings size={20} /> Settings
           </Link>
         </nav>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 absolute bottom-[100px]">
           <HardDrive className="text-blue-500" size={24} />
           <div>
             <h3 className="text-lg font-medium text-gray-700">Storage</h3>
@@ -287,10 +291,10 @@ const SettingsPage: React.FC = () => {
             </p>
           </div>
         </div>
-      </aside>
+      </aside> */}
 
       {/* Mobile Sidebar (Drawer) */}
-      <Sheet>
+      {/* <Sheet>
         <SheetTrigger asChild>
           <Button className="md:hidden absolute top-4 left-4">
             <Menu />
@@ -312,7 +316,8 @@ const SettingsPage: React.FC = () => {
             </Link>
           </nav>
         </SheetContent>
-      </Sheet>
+      </Sheet> */}
+      <Sidebar refreshFiles={dummyRefresh} />
 
       {/* Main Content section */}
       <main className="flex-1 p-6 bg-gray-100">
@@ -384,7 +389,7 @@ const SettingsPage: React.FC = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Telegram */}
-            <div className="flex flex-col gap-2 p-6 bg-white rounded-lg shadow-md transition-shadow">
+            <div className="flex flex-col gap-2 p-6 bg-white rounded-lg shadow-md transition-shadow md:min-w-[400px]">
               <div className="flex gap-4 items-center">
                 <img
                   src="https://upload.wikimedia.org/wikipedia/commons/8/83/Telegram_2019_Logo.svg"
@@ -402,7 +407,10 @@ const SettingsPage: React.FC = () => {
               </div>
               {/* add connected status later */}
               {!connectedTgId ? (
-                <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
+                <form
+                  onSubmit={handleSubmit}
+                  className="flex flex-col sm:flex-row gap-2 mt-4"
+                >
                   <Input
                     type="text"
                     placeholder="Enter Telegram User ID"
@@ -411,7 +419,7 @@ const SettingsPage: React.FC = () => {
                   />
                   <Button
                     variant="default"
-                    className="ml-auto bg-blue-600 hover:bg-blue-700"
+                    className="mx-auto bg-blue-600 hover:bg-blue-700"
                   >
                     Connect
                   </Button>
@@ -435,7 +443,7 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
         {/* Current Storage Status */}
-        {loading ? (
+        {/* {loading ? (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
             <div className="flex flex-col-reverse items-center justify-center gap-2">
               <p>Loading Storage Usage</p>
@@ -467,7 +475,7 @@ const SettingsPage: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Current Storage Providers */}
 

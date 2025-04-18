@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import SearchBar from "@/components/customComponents/SearchBar";
 import FileTable from "@/components/customComponents/FileTable";
 import RenameModal from "@/modals/RenameModal";
+import Sidebar from "@/components/customComponents/Sidebar";
 
 interface FileType {
   uid: string;
@@ -46,10 +47,10 @@ const Dashboard: React.FC = () => {
       return;
     }
     const test = async () => {
-      const response = await axiosPublic.get("/api/v1/file_manager/ping")
+      const response = await axiosPublic.get("/api/v1/file_manager/ping");
       console.log("Ping response:", response.data); // for debugging
-    }
-    test()
+    };
+    test();
     const fetchFiles = async () => {
       try {
         const token = await getIdToken();
@@ -208,8 +209,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="flex min-h-screen">
       {/* Sidebar for Large Screens, we see this at desktop*/}
-      <aside className="hidden md:flex flex-col w-52 bg-blue-50 p-6 space-y-4 shadow-lg border-r">
-        {/* <h2 className="text-2xl font-bold text-blue-600">Pitless Bucket</h2> */}
+      {/* <aside className="hidden md:flex flex-col w-52 bg-blue-50 p-6 space-y-4 shadow-lg border-r">
         <nav className="space-y-3">
           <FileUpload refreshFiles={refreshFiles} />
           <Link
@@ -226,10 +226,10 @@ const Dashboard: React.FC = () => {
             <Settings size={20} /> Settings
           </Link>
         </nav>
-      </aside>
+      </aside> */}
 
       {/* Mobile Sidebar (Drawer) needs come position fixing for drop down icon, can just move it to navbar later*/}
-      <Sheet>
+      {/* <Sheet>
         <SheetTrigger asChild>
           <Button className="md:hidden absolute top-4 left-4">
             <Menu />
@@ -253,7 +253,8 @@ const Dashboard: React.FC = () => {
             </Link>
           </nav>
         </SheetContent>
-      </Sheet>
+      </Sheet> */}
+      <Sidebar refreshFiles={refreshFiles} />
 
       {/* Main Content section */}
       <main className="flex-1 p-6 bg-gray-100 overflow-x-auto">
