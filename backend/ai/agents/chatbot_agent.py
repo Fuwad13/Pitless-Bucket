@@ -80,7 +80,7 @@ def retriever_tool(
     results = retriever.invoke(query)
     return results
 
-
+# TODO: ADD CACHING MECHANISM
 
 tools = [retriever_tool]
 

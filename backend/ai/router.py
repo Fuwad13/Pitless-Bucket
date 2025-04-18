@@ -10,17 +10,28 @@ from backend.db.main import get_session
 from backend.log.logger import get_logger
 from .agents import chatbot_agent, chatbot_agent2
 from langchain_core.messages import HumanMessage
+from .schemas import ChatInput
 
 
 logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
 
 ai_router = APIRouter()
 
-@ai_router.get("/invoke")
-async def agent_invoke(q: str, session: AsyncSession = Depends(get_session)):
+@ai_router.get("/invoke_test")
+async def agent_invoke_test(q: str, session: AsyncSession = Depends(get_session)):
     ret = await chatbot_agent2.ainvoke(
         input={"user_id": "6OJvZ9a5FFWGvTHsuxTMWjVfkOj2","messages": [HumanMessage(content=q)]},
         config={"configurable": {"thread_id": "user_id_here"}},
     )
     return ret
+
+
+@ai_router.post("/chat")
+async def agent_invoke(chat_input: ChatInput, current_user: dict = Depends(get_current_user)):
+    ret = await chatbot_agent2.ainvoke(
+        input={"user_id": current_user.get("uid"),"messages": [HumanMessage(content=chat_input.question)]},
+        config={"configurable": {"thread_id": chat_input.session_id if chat_input.session_id else current_user.get("uid")}},
+    )
+    messages = ret.get("messages")
+    return messages[-1].content
 
