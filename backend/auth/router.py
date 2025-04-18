@@ -1,7 +1,6 @@
 import json
 import time
 import urllib.parse
-import uuid
 from pathlib import Path
 
 import httpx
@@ -47,8 +46,10 @@ GOOGLE_CLIENT_SECRETS_WEB = {
         "token_uri": "https://oauth2.googleapis.com/token",
         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
         "client_secret": Config.WEB_CLIENT_SECRET,
-        "redirect_uris": ["http://localhost:8000/api/v1/auth/google/callback", 
-                          f"{Config.BACKEND_URL}/api/v1/auth/google/callback"],
+        "redirect_uris": [
+            "http://localhost:8000/api/v1/auth/google/callback",
+            f"{Config.BACKEND_URL}/api/v1/auth/google/callback",
+        ],
     }
 }
 

@@ -152,9 +152,10 @@ class FileManagerService:
         self, file_path: str, file_: FileInfo, firebase_uid: str
     ):
         """
-        Summarize text/pdf or readable files and save it to vectorstore
+        Summarize the file content and save it to vectorstore
         Args:
             file_path (str): Path to the file
+            file_ (FileInfo): FileInfo object containing file metadata
             firebase_uid (str): Firebase UID of the User
         """
         if file_.extension == "pdf":
@@ -211,7 +212,9 @@ class FileManagerService:
         )
         await vector_store.aadd_documents(docs_to_store)
         # logger.debug(docs_to_store)
-        logger.debug("Added documents to vector store")
+        logger.debug(
+            f"Added documents to vector store. Original file size: {file_.size}, summarized size: {sum(len(doc.page_content) for doc in docs_to_store)}"
+        )
 
         self._cleanup_temp_file(file_path)
 
