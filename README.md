@@ -5,6 +5,7 @@ Pitless Bucket is a cloud storage aggregator that allows you to manage all your 
 ---
 
 ## Contributors
+
 - Fuwad Hasan 2211247042 fuwad.hasan@northsouth.edu
 - Abdullah Al Raiyan 2212712042 abdullah.raiyan@northsouth.edu
 
@@ -138,15 +139,15 @@ Pitless Bucket is a cloud storage aggregator that allows you to manage all your 
 
 ## Frameworks, Technologies, and Languages
 
-| Framework/Technology | Purpose                                                                 | Language/Tool | Purpose                                                                 |
-|-----------------------|-------------------------------------------------------------------------|---------------|-------------------------------------------------------------------------|
-| FastAPI              | Backend framework for building APIs                                    | Python        | Programming language for backend development                           |
-| PostgreSQL           | Database for storing user and file metadata                            | SQLModel      | ORM for interacting with the PostgreSQL database                       |
-| Redis                | In-memory data structure store used for caching    |               |                                                                         |
-| Next.js              | Frontend framework for building the web interface                      | TypeScript    | Programming language for frontend development                          |
-| TailwindCSS          | Utility-first CSS framework for styling the frontend                   | Node.js       | Runtime for executing JavaScript/TypeScript code                       |
-| Android Studio       | IDE for developing the Android application                             | Kotlin        | Programming language for Android app development                       |
-| Jetpack Compose      | Toolkit for building native Android UI                                 |               |                                                                         |
+| Framework/Technology | Purpose                                              | Language/Tool | Purpose                                          |
+| -------------------- | ---------------------------------------------------- | ------------- | ------------------------------------------------ |
+| FastAPI              | Backend framework for building APIs                  | Python        | Programming language for backend development     |
+| PostgreSQL           | Database for storing user and file metadata          | SQLModel      | ORM for interacting with the PostgreSQL database |
+| Redis                | In-memory data structure store used for caching      |               |                                                  |
+| Next.js              | Frontend framework for building the web interface    | TypeScript    | Programming language for frontend development    |
+| TailwindCSS          | Utility-first CSS framework for styling the frontend | Node.js       | Runtime for executing JavaScript/TypeScript code |
+| Android Studio       | IDE for developing the Android application           | Kotlin        | Programming language for Android app development |
+| Jetpack Compose      | Toolkit for building native Android UI               |               |                                                  |
 
 ---
 
