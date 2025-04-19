@@ -25,7 +25,7 @@ from backend.db.models import FileChunk, FileInfo, StorageProvider, User
 from backend.storage_provider.factory import get_provider
 
 from .llm import get_model
-from .prompts import CHATBOT_AGENT_PROMPT
+from .prompts import CHATBOT_AGENT_PROMPT, CHATBOT_AGENT_PROMPT2
 
 chroma_client = chromadb.PersistentClient(path=Config.CHROMADB_PATH)
 embeddings = OpenAIEmbeddings(
