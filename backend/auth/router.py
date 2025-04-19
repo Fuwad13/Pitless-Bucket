@@ -13,7 +13,7 @@ from redis import asyncio as aioredis
 from sqlmodel import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from backend.config import Config
+from backend.config import settings
 from backend.db.main import get_session
 from backend.db.models import StorageProvider, User
 from backend.file_manager.dependecies import get_redis
@@ -40,15 +40,15 @@ GOOGLE_DRIVE_SCOPES = [
 
 GOOGLE_CLIENT_SECRETS_WEB = {
     "web": {
-        "client_id": Config.WEB_CLIENT_ID,
+        "client_id": settings.WEB_CLIENT_ID,
         "project_id": "cse327-project-449320",
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://oauth2.googleapis.com/token",
         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "client_secret": Config.WEB_CLIENT_SECRET,
+        "client_secret": settings.WEB_CLIENT_SECRET,
         "redirect_uris": [
             "http://localhost:8000/api/v1/auth/google/callback",
-            f"{Config.BACKEND_URL}/api/v1/auth/google/callback",
+            f"{settings.BACKEND_URL}/api/v1/auth/google/callback",
         ],
     }
 }
@@ -56,7 +56,7 @@ GOOGLE_CLIENT_SECRETS_WEB = {
 flow = Flow.from_client_config(
     GOOGLE_CLIENT_SECRETS_WEB,
     scopes=GOOGLE_DRIVE_SCOPES,
-    redirect_uri=f"{Config.BACKEND_URL}/api/v1/auth/google/callback",
+    redirect_uri=f"{settings.BACKEND_URL}/api/v1/auth/google/callback",
     autogenerate_code_verifier=True,
     code_verifier=None,
 )
@@ -151,10 +151,10 @@ def auth_dropbox(current_user: dict = Depends(get_current_user)) -> dict:
     encoded_state = urllib.parse.quote(state)
     dropbox_auth_url = (
         f"https://www.dropbox.com/oauth2/authorize"
-        f"?client_id={Config.DROPBOX_APP_KEY}"
+        f"?client_id={settings.DROPBOX_APP_KEY}"
         f"&response_type=code"
         f"&token_access_type=offline"
-        f"&redirect_uri={Config.BACKEND_URL}/api/v1/auth/dropbox/callback"
+        f"&redirect_uri={settings.BACKEND_URL}/api/v1/auth/dropbox/callback"
         f"&state={encoded_state}"
     )
     return {"dropbox_auth_url": dropbox_auth_url}
@@ -173,9 +173,9 @@ async def auth_dropbox_callback(
         data = {
             "code": code,
             "grant_type": "authorization_code",
-            "client_id": Config.DROPBOX_APP_KEY,
-            "client_secret": Config.DROPBOX_APP_SECRET,
-            "redirect_uri": f"{Config.BACKEND_URL}/api/v1/auth/dropbox/callback",
+            "client_id": settings.DROPBOX_APP_KEY,
+            "client_secret": settings.DROPBOX_APP_SECRET,
+            "redirect_uri": f"{settings.BACKEND_URL}/api/v1/auth/dropbox/callback",
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         async with httpx.AsyncClient() as client:

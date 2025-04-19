@@ -54,7 +54,7 @@ async def cmd_upload_file(message: Message) -> None:
             _, ext = os.path.splitext(original_name) if original_name else ("", "")
             ext = ext.lower() or ".bin"
 
-            file_name = f"file_tg{ext}"
+            file_name = file_to_upload.file_name
             mime_type = file_to_upload.mime_type or "application/octet-stream"
 
         telegram_id = message.from_user.id

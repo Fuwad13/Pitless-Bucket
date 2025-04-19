@@ -10,14 +10,14 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import InjectedState, create_react_agent
 from langgraph.prebuilt.chat_agent_executor import AgentState
 
-from backend.config import Config
+from backend.config import settings
 from backend.db.main import get_session
 
 from .llm import get_model
 
-chroma_client = chromadb.PersistentClient(path=Config.CHROMADB_PATH)
+chroma_client = chromadb.PersistentClient(path=settings.CHROMADB_PATH)
 embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small", api_key=Config.OPENAI_API_KEY
+    model="text-embedding-3-small", api_key=settings.OPENAI_API_KEY
 )
 vectorstore = Chroma(
     client=chroma_client,

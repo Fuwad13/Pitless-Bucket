@@ -1,15 +1,15 @@
 from redis import asyncio as aioredis
 
-from backend.config import Config
+from backend.config import settings
 
 
 def create_redis():
   return aioredis.ConnectionPool(
-        host=Config.REDIS_HOST,
-        port=Config.REDIS_PORT,
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
         decode_responses=True,
-        username=Config.REDIS_USERNAME,
-        password=Config.REDIS_PASSWORD,
+        username=settings.REDIS_USERNAME,
+        password=settings.REDIS_PASSWORD,
     )
 
 pool = create_redis()

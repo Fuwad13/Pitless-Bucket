@@ -1,6 +1,8 @@
 import asyncio
+import datetime
 import json
 import os
+from pathlib import Path
 from typing import Annotated, List
 
 import aiofiles
@@ -19,17 +21,25 @@ from langgraph.prebuilt.chat_agent_executor import AgentState
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from backend.config import Config
+from backend.config import settings
 from backend.db.main import async_engine
 from backend.db.models import FileChunk, FileInfo, StorageProvider, User
+from backend.log.logger import get_logger
 from backend.storage_provider.factory import get_provider
 
 from .llm import get_model
-from .prompts import CHATBOT_AGENT_PROMPT, CHATBOT_AGENT_PROMPT2
+from .prompts import (
+    CHATBOT_AGENT_PROMPT,
+    CHATBOT_AGENT_PROMPT2,
+    CHATBOT_AGENT_PROMPT3,
+    CHATBOT_AGENT_PROMPT_GPT,
+)
 
-chroma_client = chromadb.PersistentClient(path=Config.CHROMADB_PATH)
+logger = get_logger(__name__, Path(settings.LOG_FILE_PATH))
+
+chroma_client = chromadb.PersistentClient(path=settings.CHROMADB_PATH)
 embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small", api_key=Config.OPENAI_API_KEY
+    model="text-embedding-3-small", api_key=settings.OPENAI_API_KEY
 )
 vectorstore = Chroma(
     client=chroma_client,
@@ -38,14 +48,11 @@ vectorstore = Chroma(
 )
 
 
-
 memory = MemorySaver()
 model = get_model("gemini-2.0-flash")
 
 
-system_prompt = SystemMessage(
-    content=CHATBOT_AGENT_PROMPT
-)
+system_prompt = SystemMessage(content=CHATBOT_AGENT_PROMPT_GPT)
 
 
 class ChatbotAgentState(AgentState):
@@ -59,13 +66,21 @@ def get_user_id(state: Annotated[ChatbotAgentState, InjectedState]) -> str:
     """
     return state["user_id"]
 
+
 @tool
-async def get_user_info(
-    state: Annotated[ChatbotAgentState, InjectedState]
-) -> str:
+def get_datetime() -> str:
     """
-    Use this tool to get the user's information from the database. 
+    Use this tool to get the current datetime.
     """
+    return str(datetime.datetime.now())
+
+
+@tool
+async def get_user_info(state: Annotated[ChatbotAgentState, InjectedState]) -> str:
+    """
+    Use this tool to get the user's information from the database.
+    """
+    logger.debug(f"Calling get_user_info tool user_id {state['user_id']}")
     user_id = state["user_id"]
     try:
         async with AsyncSession(async_engine) as session:
@@ -77,7 +92,9 @@ async def get_user_info(
     except Exception as e:
         return f"Error getting user info: {e}"
 
+
 cache = TTLCache(maxsize=100, ttl=1800)
+
 
 def cache_key(file_id, state):
     return hashkey(state["user_id"], file_id)
@@ -87,15 +104,15 @@ def cache_key(file_id, state):
 @tool
 async def download_file_tool(
     file_id: Annotated[str, "The file ID extracted from document metadata"],
-    state: Annotated[ChatbotAgentState, InjectedState]
+    state: Annotated[ChatbotAgentState, InjectedState],
 ) -> str:
     """
     Use this tool to download the full content of a file given its file ID.
     Use this tool only for pdf, docx, txt and other readable files only.
     Ensures the file belongs to the user.
     """
+    logger.debug(f"Calling download_file_tool with file_id {file_id}")
     user_id = state["user_id"]
-    
 
     try:
         async with AsyncSession(async_engine) as session:
@@ -128,7 +145,7 @@ async def download_file_tool(
                     async with aiofiles.open(chunk_path, "rb") as f:
                         await temp_file.write(await f.read())
                     os.remove(chunk_path)
-                
+
                 if result.extension == "pdf":
                     loader = PyPDFLoader(temp_file.name)
                 elif result.extension in ["doc", "docx"]:
@@ -139,7 +156,6 @@ async def download_file_tool(
                     raise ValueError(f"Unsupported file type: {result.extension}")
                 documents = await loader.aload()
                 return "\n".join([doc.page_content for doc in documents])
-            
 
     except Exception as e:
         print(e)
@@ -148,11 +164,12 @@ async def download_file_tool(
 
 @tool
 async def get_file_list(
-    state: Annotated[ChatbotAgentState, InjectedState]
+    state: Annotated[ChatbotAgentState, InjectedState],
 ) -> List[dict]:
     """
     Use this tool to get the list of files belonging to the user.
     """
+    logger.debug(f"Calling get_file_list tool user_id {state['user_id']}")
     user_id = state["user_id"]
     try:
         async with AsyncSession(async_engine) as session:
@@ -176,6 +193,7 @@ def retriever_tool(
     You can use the retriever_tool to get the relevant documents from the vectorstore.
     You can refine the query to get better retrival before using the retriever_tool.
     """
+    logger.debug(f"Calling retriever_tool with query: {query}")
     retriever = vectorstore.as_retriever(
         search_kwargs={"k": 4, "filter": {"user_id": state["user_id"]}}
     )
@@ -183,8 +201,7 @@ def retriever_tool(
     return results
 
 
-
-tools = [retriever_tool, download_file_tool, get_user_info, get_file_list]
+tools = [retriever_tool, download_file_tool, get_user_info, get_file_list, get_datetime]
 
 chatbot_agent2 = create_react_agent(
     model=model,

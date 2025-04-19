@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     
     CHROMADB_PATH: str = str(Path.cwd() / "backend" / "ai" / "vectorstore" / "chroma")
+    LOG_FILE_PATH: str = str(Path.cwd() / "backend" / "log" / "app.log")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -41,4 +42,4 @@ class Settings(BaseSettings):
         return base64.b64decode(v).decode("utf-8")
 
 
-Config = Settings()
+settings = Settings()

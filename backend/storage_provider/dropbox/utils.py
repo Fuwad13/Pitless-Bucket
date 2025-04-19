@@ -4,7 +4,7 @@ from typing import Dict
 
 import httpx
 
-from backend.config import Config
+from backend.config import settings
 
 
 def refresh_dropbox_token(refresh_token):
@@ -13,8 +13,8 @@ def refresh_dropbox_token(refresh_token):
     data = {
         "refresh_token": refresh_token,
         "grant_type": "refresh_token",
-        "client_id": Config.DROPBOX_APP_KEY,
-        "client_secret": Config.DROPBOX_APP_SECRET,
+        "client_id": settings.DROPBOX_APP_KEY,
+        "client_secret": settings.DROPBOX_APP_SECRET,
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     response = httpx.post(token_url, data=data, headers=headers)

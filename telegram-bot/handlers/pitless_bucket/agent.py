@@ -1,9 +1,10 @@
-from aiogram import Router, F
+import httpx
+from aiogram import F, Router
+from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.types import Message
-from handlers.pitless_bucket.auth import get_user, get_firebase_id_token
+from handlers.pitless_bucket.auth import get_firebase_id_token, get_user
 from handlers.pitless_bucket.constants import BACKEND_API_URL
-import httpx
 
 agent_router = Router()
 
@@ -27,7 +28,8 @@ async def text_handler(message: Message) -> None:
             )
             response.raise_for_status()
             data = response.json()
-            await message.answer(data["answer"])
+            print(data["answer"])
+            await message.answer(data["answer"], parse_mode=ParseMode.HTML)
 
     else:
         await message.answer(

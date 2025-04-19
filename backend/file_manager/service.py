@@ -22,7 +22,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from backend.ai.agents import summarizer_agent
 from backend.chunk_strategy.strategy import FixedSizeChunkStrategy
-from backend.config import Config
+from backend.config import settings
 from backend.db.models import FileChunk, FileInfo, StorageProvider
 from backend.log.logger import get_logger
 from backend.storage_provider.abstract_provider import AbstractStorageProvider
@@ -168,7 +168,7 @@ class FileManagerService:
             raise ValueError(f"Unsupported file type: {file_.extension}")
         documents = await loader.aload()
         embeddings = OpenAIEmbeddings(
-            model=EMBEDDING_MODEL, api_key=Config.OPENAI_API_KEY
+            model=EMBEDDING_MODEL, api_key=settings.OPENAI_API_KEY
         )
         docs_to_store: List[Document] = []
         for doc in documents:
@@ -204,7 +204,7 @@ class FileManagerService:
             docs_ = text_splitter.create_documents([r_state_str], [mtdt])
             docs_to_store.extend(docs_)
 
-        chroma_client = chromadb.PersistentClient(path=Config.CHROMADB_PATH)
+        chroma_client = chromadb.PersistentClient(path=settings.CHROMADB_PATH)
         vector_store = Chroma(
             client=chroma_client,
             collection_name="file_content_summary",
@@ -460,7 +460,7 @@ class FileManagerService:
         Args:
             file_id (str): File ID
         """
-        chroma_client = chromadb.PersistentClient(path=Config.CHROMADB_PATH)
+        chroma_client = chromadb.PersistentClient(path=settings.CHROMADB_PATH)
         vector_store = Chroma(
             client=chroma_client, collection_name="file_content_summary"
         )
