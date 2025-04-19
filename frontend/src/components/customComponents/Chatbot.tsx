@@ -11,6 +11,7 @@ import React, {
 import { MessageSquare, Send, X, Loader2, Bot } from "lucide-react";
 import { AuthContext } from "@/app/AuthContext";
 import useAxiosPublic from "@/hooks/AxiosPublic";
+import BeautifyLLMOutput from "@/misc/LlmOutputParser";
 
 interface ChatMessage {
   id: number;
@@ -53,7 +54,6 @@ const Chatbot: React.FC = () => {
         throw new Error(`API Error: ${response.statusText}`);
       }
       const data = await response;
-
       return data.data.answer || "Sorry, I couldn't get a response.";
     } catch (error) {
       console.error("API Call failed:", error);
@@ -95,7 +95,6 @@ const Chatbot: React.FC = () => {
     setIsLoading(true);
     scrollToBottom();
 
-    // Get bot response
     try {
       const botResponseText = await getLLMResponse(query);
       const botMessage: ChatMessage = {
@@ -130,11 +129,13 @@ const Chatbot: React.FC = () => {
 
   return (
     <>
-      {/* Chat Trigger Button */}
+      {/* Chat Trigger Button*/}
       {!isOpen && (
         <button
           onClick={toggleChat}
-          className="fixed bottom-5 right-5 z-50 bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-full shadow-xl hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-all duration-300 ease-in-out transform hover:scale-110"
+          className={`fixed bottom-5 right-5 z-50 bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-full shadow-xl hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-all duration-300 ease-in-out transform hover:scale-110 ${
+            !currentUser ? "hidden" : ""
+          }`}
           aria-label="Open Chat"
         >
           <MessageSquare size={24} />
@@ -149,7 +150,7 @@ const Chatbot: React.FC = () => {
             : "opacity-0 translate-y-4 pointer-events-none"
         }`}
       >
-        {/* Header */}
+        {/* Header*/}
         <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-lg shadow-sm">
           <h3 className="font-semibold text-lg">Chat With Your Files</h3>
           <button
@@ -187,12 +188,15 @@ const Chatbot: React.FC = () => {
                     overflowWrap: "break-word",
                   }}
                 >
-                  {message.text}
+                  {message.sender === "bot" ? (
+                    <BeautifyLLMOutput text={message.text} />
+                  ) : (
+                    message.text
+                  )}
                 </div>
               </div>
             </div>
           ))}
-          {/* Loading Indicator */}
           {isLoading && (
             <div className="flex justify-start">
               <div className="flex items-end max-w-[80%] gap-2">
@@ -209,7 +213,6 @@ const Chatbot: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
         <form
           onSubmit={handleSendMessage}
           className="p-3 border-t border-gray-200 bg-white rounded-b-lg"

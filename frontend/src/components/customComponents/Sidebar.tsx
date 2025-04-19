@@ -98,8 +98,8 @@ const Sidebar: React.FC<SidebarProps> = ({ refreshFiles }) => {
           <div>
             <h3 className="text-lg font-medium text-gray-700">Storage</h3>
             <p className="text-sm text-gray-500">
-              {formatSize(storageStat.used)} of {formatSize(storageStat.total)}{" "}
-              used
+              {formatSize(storageStat.used)} out of <br></br>{" "}
+              {formatSize(storageStat.total)} used
             </p>
           </div>
         </div>

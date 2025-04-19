@@ -38,6 +38,7 @@ const SettingsPage: React.FC = () => {
   const { currentUser, getIdToken } = useContext(AuthContext)!;
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(false);
+  const [tgLoading, setTgLoading] = useState<boolean>(false);
   const axiosPublic = useAxiosPublic();
   const [error, setError] = useState<string | null>(null);
   const [storageStat, setStorageStat] = useState<StorageStat>({
@@ -214,6 +215,7 @@ const SettingsPage: React.FC = () => {
     setTelegramUserId(event.target.value);
   };
   const getTgId = async () => {
+    setTgLoading(true);
     try {
       const token = await getIdToken();
       const response = await axiosPublic.get("/api/v1/auth/get_linked_tgid", {
@@ -223,6 +225,8 @@ const SettingsPage: React.FC = () => {
       setConnectedTgId(tgId);
     } catch (error) {
       console.error("Error fetching TG ID:", error);
+    } finally {
+      setTgLoading(false);
     }
   };
 
@@ -406,8 +410,12 @@ const SettingsPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              {/* add connected status later */}
-              {!connectedTgId ? (
+
+              {tgLoading ? (
+                <div className="flex justify-center items-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                </div>
+              ) : !connectedTgId ? (
                 <form
                   onSubmit={handleSubmit}
                   className="flex flex-col sm:flex-row gap-2 mt-4"
@@ -419,6 +427,7 @@ const SettingsPage: React.FC = () => {
                     className="flex-1"
                   />
                   <Button
+                    type="submit"
                     variant="default"
                     className="mx-auto bg-blue-600 hover:bg-blue-700"
                   >
@@ -426,9 +435,11 @@ const SettingsPage: React.FC = () => {
                   </Button>
                 </form>
               ) : (
-                <div className="flex gap-2 justify-between items-center">
-                  <div className="flex gap-2">
-                    <h1>Connected to Telegram ID:</h1>
+                <div className="flex gap-2 justify-between items-center mt-4">
+                  <div className="flex gap-2 items-center">
+                    <span className="font-semibold text-gray-600">
+                      Connected to Telegram ID:
+                    </span>{" "}
                     <p className="text-gray-600">{connectedTgId}</p>
                   </div>
                   <Button
