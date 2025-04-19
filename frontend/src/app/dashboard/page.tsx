@@ -43,11 +43,6 @@ const Dashboard: React.FC = () => {
       router.push("/login");
       return;
     }
-    const test = async () => {
-      const response = await axiosPublic.get("/api/v1/file_manager/ping");
-      console.log("Ping response:", response.data); // for debugging
-    };
-    test();
     const fetchFiles = async () => {
       try {
         const token = await getIdToken();

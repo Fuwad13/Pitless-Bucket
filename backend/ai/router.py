@@ -18,10 +18,10 @@ logger = get_logger(__name__, Path(__file__).parent.parent / "log" / "app.log")
 ai_router = APIRouter()
 
 @ai_router.get("/invoke_test")
-async def agent_invoke_test(q: str, session: AsyncSession = Depends(get_session)):
+async def agent_invoke_test(q: str, thread_id: str, session: AsyncSession = Depends(get_session)):
     ret = await chatbot_agent2.ainvoke(
         input={"user_id": "6OJvZ9a5FFWGvTHsuxTMWjVfkOj2","messages": [HumanMessage(content=q)]},
-        config={"configurable": {"thread_id": "user_id_here"}},
+        config={"configurable": {"thread_id": thread_id}},
     )
     return ret
 

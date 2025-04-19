@@ -83,8 +83,8 @@ def cache_key(file_id, state):
     return hashkey(state["user_id"], file_id)
 
 
+# @cached(cache, key=cache_key)
 @tool
-@cached(cache, key=cache_key)
 async def download_file_tool(
     file_id: Annotated[str, "The file ID extracted from document metadata"],
     state: Annotated[ChatbotAgentState, InjectedState]
@@ -141,6 +141,7 @@ async def download_file_tool(
             
 
     except Exception as e:
+        print(e)
         return f"Error downloading file: {e}"
 
 
