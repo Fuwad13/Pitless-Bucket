@@ -21,7 +21,6 @@ interface StorageStat {
 
 const Sidebar: React.FC<SidebarProps> = ({ refreshFiles }) => {
   const pathname = usePathname();
-  console.log(pathname);
   const { getIdToken } = useContext(AuthContext)!;
   const [storageStat, setStorageStat] = useState<StorageStat>({
     used: 0,
