@@ -91,6 +91,7 @@ async def download_file_tool(
 ) -> str:
     """
     Use this tool to download the full content of a file given its file ID.
+    Use this tool only for pdf, docx, txt and other readable files only.
     Ensures the file belongs to the user.
     """
     user_id = state["user_id"]
