@@ -25,7 +25,7 @@ async def get_firebase_id_token(uid: str) -> str:
     # Exchange the custom token for an ID token using Firebase REST API
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key={Config.FIREBASE_API_KEY}"
     payload = {"token": custom_token, "returnSecureToken": True}
-    async with httpx.AsyncClient() as httpx_client:
+    async with httpx.AsyncClient(timeout=10) as httpx_client:
         response = await httpx_client.post(url, json=payload)
     if response.status_code == 200:
         id_token = response.json()["idToken"]
@@ -39,7 +39,7 @@ async def get_user(telegram_id: int) -> Dict:
     Get the Firebase UID associated with the given Telegram ID
     """
     try:
-        async with httpx.AsyncClient() as httpx_client:
+        async with httpx.AsyncClient(timeout=10) as httpx_client:
 
             response = await httpx_client.get(
                 f"{BACKEND_API_URL}/auth/get_user_by_tgid?tg_id={telegram_id}"
