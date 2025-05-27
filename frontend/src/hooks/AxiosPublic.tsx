@@ -1,7 +1,8 @@
 "use client";
 import axios from "axios";
 const axiosPublic = axios.create({
-  baseURL: "https://promoted-cardinal-handy.ngrok-free.app",
+  // baseURL: "https://promoted-cardinal-handy.ngrok-free.app", Uncomment this line to use ngrok
+  baseURL: "http://127.0.0.1:8000", // Comment this line to use ngrok
   headers: {
     "ngrok-skip-browser-warning": "69696",
   },

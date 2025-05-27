@@ -6,8 +6,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    BACKEND_URL: str = "https://promoted-cardinal-handy.ngrok-free.app"
-    FRONTEND_URL: str = "https://pitless-bucket.vercel.app"
+    # BACKEND_URL: str = "https://promoted-cardinal-handy.ngrok-free.app"
+    # FRONTEND_URL: str = "https://pitless-bucket.vercel.app"
+    BACKEND_URL: str = "http://127.0.0.1:8000"
+    FRONTEND_URL: str = "http://localhost:3000"
     DATABASE_URL: str
     WEB_CLIENT_ID: str
     WEB_CLIENT_SECRET: str
