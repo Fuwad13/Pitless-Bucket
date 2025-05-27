@@ -514,9 +514,9 @@ const SettingsPage: React.FC = () => {
 
             {/* List of Connected Storages */}
             <div className="space-y-4">
-              {visibleItems.map((storage) => (
+              {visibleItems.map((storage, index) => (
                 <div
-                  key={storage.email}
+                  key={index}
                   className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
                 >
                   <div className="flex items-center gap-4">
